@@ -1,21 +1,21 @@
 import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
 import { IsEmail, Length } from 'class-validator';
-import { Role } from "./Role";
+import { Role } from "./Role.js";
 
 @Entity()
 export class User {
     @PrimaryGeneratedColumn()
     id!: number;
 
-    @Column({unique: true})
+    @Column({unique: true, type: 'varchar'})
     @IsEmail()
     email!: string
 
-    @Column({unique: true})
+    @Column({unique: true, type: 'varchar'})
     @Length(1,100)
     name!: string;
 
-    @Column()
+    @Column({type: 'varchar'})
     @Length(8,100)
     password!: string;
 
