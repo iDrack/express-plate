@@ -27,9 +27,6 @@ Ready to use node boiler plate using Typescript and TypeORM with user and roles 
     DATABASE_PASSWORD=
     DATABASE_PORT=
    ```
-4. Generate initial migration: 
-   
-    `npx prisma migrate dev --name init`
 
 ## Features:
 
