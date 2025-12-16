@@ -7,14 +7,14 @@ import {
     refreshToken,
     getProfile,
     logoutUser,
-} from "../Services/UserService.js";
-import { authenticate } from "../Middlewares/authMiddleware.js";
+} from "../services/UserService.js";
+import { authenticate } from "../middlewares/authMiddleware.js";
 import {
     apiLimiter,
     loginLimiter,
     refreshLimiter,
     registerLimiter,
-} from "../Middlewares/rateLimiter.js";
+} from "../middlewares/rateLimiter.js";
 
 const router = Router();
 

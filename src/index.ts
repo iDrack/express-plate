@@ -4,8 +4,8 @@ import dotenv from "dotenv";
 import express from "express";
 import swaggerUi from "swagger-ui-express";
 import { AppDataSource } from "./config/database.js";
-import { errorHandler } from "./Middlewares/errorHandler.js";
-import UserRoutes from "./Routes/UserRoutes.js";
+import { errorHandler } from "./middlewares/errorHandler.js";
+import UserRoutes from "./routes/UserRoutes.js";
 import { swaggerSpec } from "./config/swagger.js";
 
 dotenv.config({ path: "./.env" });
@@ -30,8 +30,9 @@ AppDataSource.initialize()
             console.log(
                 `Server running on port ${port} in ${process.env.MODE} mode`
             );
-            console.log(`Swagger docs available at http://localhost:${port}/api-docs`);
-            
+            console.log(
+                `Swagger docs available at http://localhost:${port}/api-docs`
+            );
         });
     })
     .catch((error) => {

@@ -1,8 +1,8 @@
 import { AppDataSource } from "../config/database.js";
 import bcrypt from "bcrypt";
-import { User } from "../Models/User.js";
+import { User } from "../models/User.js";
 import type { Request, Response, NextFunction } from "express";
-import { AppError } from "../Middlewares/errorHandler.js";
+import { AppError } from "../middlewares/errorHandler.js";
 import { JwtService } from "./JwtService.js";
 
 const userRepository = AppDataSource.getRepository(User);
@@ -218,7 +218,7 @@ export const getUserById = async (userId: number) => {
         where: { id: userId },
     });
     if (!user) {
-        throw new AppError("Utilisateur introuvable", 401)
+        throw new AppError("Utilisateur introuvable", 401);
     }
     return user;
 };
