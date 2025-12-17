@@ -12,7 +12,7 @@ export class User {
     email!: string
 
     @Column({unique: true, type: 'varchar'})
-    @Length(1,100)
+    @Length(3,100)
     name!: string;
 
     @Column({type: 'varchar'})
@@ -28,4 +28,9 @@ export class User {
     @UpdateDateColumn()
     updatedAt!: Date;
 
+    get createdAtLocal(): string {
+        return this.createdAt.toLocaleString('fr-FR', {
+            timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
+        });
+    }
 }

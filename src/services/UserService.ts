@@ -13,22 +13,25 @@ export const loginUser = async (
     next: NextFunction
 ) => {
     try {
-        const { name, password } = req.body;
-        if (!name || !password) {
-            throw new AppError(
-                "Nom d'utilisateur ou mot de passe incorrect",
-                400
-            );
+        const { name, email, password } = req.body;
+        if (!password || (!name && !email)) {
+            throw new AppError("Username or password incorrect", 400);
         }
-        //Vérifications des paramètres de connexion de l'utilisateur
-        const user = await userRepository.findOne({ where: { name } });
+        //Check infos against user login data
+        let user;
+        if (email) {
+            user = await userRepository.findOne({ where: { email } });
+        } else {
+            user = await userRepository.findOne({ where: { name } });
+        }
+
         if (!user) {
-            throw new AppError(`Nom d'utilisateur introuvable.`, 404);
+            throw new AppError(`Unable to find user.`, 404);
         }
 
         const isPasswordValid = await bcrypt.compare(password, user.password);
         if (!isPasswordValid) {
-            throw new AppError("Mot de passe incorrect", 401);
+            throw new AppError("Incorrect password.", 401);
         }
 
         //Créaations des Tokens
@@ -48,16 +51,17 @@ export const loginUser = async (
             httpOnly: true,
             secure: process.env.MODE_ENV === "production",
             sameSite: "strict",
-            maxAge: 30 * 24 * 60 * 60 * 1000, //30 jours
+            maxAge: 30 * 24 * 60 * 60 * 1000, //30 days
             path: "/users/refresh",
         });
-
+        //TODO: auto connect user
         res.status(200).json({
             status: "success",
             data: {
                 user: {
                     id: user.id,
                     name: user.name,
+                    role: user.role,
                 },
                 accessToken,
             },
@@ -77,7 +81,7 @@ export const logoutUser = async (
 
         res.status(200).json({
             status: "success",
-            message: "Déconnexion réussie.",
+            message: "Logout successful",
         });
     } catch (error) {
         next(error);
@@ -93,7 +97,7 @@ export const refreshToken = async (
         const refreshToken = req.cookies.refreshToken;
 
         if (!refreshToken) {
-            throw new AppError("Refresh token manquant", 400);
+            throw new AppError("Missing refresh token.", 400);
         }
         const decoded = JwtService.verifyRefreshToken(refreshToken);
 
@@ -121,16 +125,16 @@ export const getProfile = async (
 ) => {
     try {
         if (!req.user.id) {
-            throw new AppError("Utilisateur non authentifié", 401);
+            throw new AppError("You need to be logged in.", 401);
         }
 
         const user = await userRepository.findOne({
             where: { id: req.user.id },
-            select: ["id", "name"],
+            select: ["id", "name", "email"],
         });
 
         if (!user) {
-            throw new AppError("Utilisateur introuvable", 404);
+            throw new AppError("User not found.", 404);
         }
 
         res.status(200).json({
@@ -149,7 +153,7 @@ export const getAllUser = async (
 ) => {
     try {
         const users = await userRepository.find({
-            select: ["id", "name", "email", "password", "role"],
+            select: ["id", "name", "email", "role", "createdAt", "updatedAt"],
         });
         res.json({ status: "success", data: users });
     } catch (error) {
@@ -164,14 +168,14 @@ export const getUser = async (
 ) => {
     try {
         if (req.params.id === undefined) {
-            throw new Error("Identifiant manquant.");
+            throw new Error("Missing user id.");
         } else {
             const user = await userRepository.findOne({
                 where: { id: parseInt(req.params.id) },
-                select: ["id", "name"],
+                select: ["id", "name", "role"],
             });
             if (!user) {
-                throw new AppError("User not found", 404);
+                throw new AppError("User not found.", 404);
             }
             res.json({ status: "success", data: user });
         }
@@ -188,18 +192,22 @@ export const createUser = async (
     try {
         const passwordRegex =
             /^.*(?=.{8,})(?=.*[a-zA-Z])(?=.*\d)(?=.*[!#$%&? "]).*$/;
-        const { name, password } = req.body;
-        if (!name || !password) {
+        const { name, email, password } = req.body;
+        if (!name || !email || !password) {
             throw new AppError(
-                "Un nom d'utilisateur et un mot de passe sont nécessaire.",
+                "You need a name, an e-mail and a password to create a user account.",
                 400
             );
         }
         if (!passwordRegex.test(password)) {
-            throw new AppError("Mot de passe invalide.", 400);
+            throw new AppError("Password format is invalid.", 400);
         }
         const hash = await bcrypt.hash(password, 3);
-        const user = userRepository.create({ name: name, password: hash });
+        const user = userRepository.create({
+            name: name,
+            email: email,
+            password: hash,
+        });
         await userRepository.save(user);
         res.status(201).json({
             status: "success",
@@ -218,7 +226,27 @@ export const getUserById = async (userId: number) => {
         where: { id: userId },
     });
     if (!user) {
-        throw new AppError("Utilisateur introuvable", 401);
+        throw new AppError("User not found.", 404);
+    }
+    return user;
+};
+
+export const getUserByName = async (name: string) => {
+    const user = await userRepository.findOne({
+        where: { name: name },
+    });
+    if (!user) {
+        throw new AppError("User not found.", 404);
+    }
+    return user;
+};
+
+export const getuserByEmail = async (email: string) => {
+    const user = await userRepository.findOne({
+        where: { email: email },
+    });
+    if (!user) {
+        throw new AppError("User not found.", 404);
     }
     return user;
 };

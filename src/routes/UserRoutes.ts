@@ -8,7 +8,7 @@ import {
     getProfile,
     logoutUser,
 } from "../services/UserService.js";
-import { authenticate } from "../middlewares/authMiddleware.js";
+import { authenticate, authorize } from "../middlewares/authMiddleware.js";
 import {
     apiLimiter,
     loginLimiter,
@@ -24,7 +24,7 @@ router.use(apiLimiter);
  * @swagger
  * tags:
  *   name: Users
- *   description: Gestion des utilisateurs et authentification
+ *   description: Users and authentification management endpoints.
  */
 
 /**
@@ -36,42 +36,75 @@ router.use(apiLimiter);
  *       properties:
  *         id:
  *           type: integer
- *           description: ID de l'utilisateur
+ *           description: User id
+ *         email:
+ *           type: string
+ *           format: email
+ *           description: User e-mail address (must be a unique address)
  *         name:
  *           type: string
- *           description: Nom de l'utilisateur
+ *           description: Username (must be unique) 
+ *         role:
+ *           type: string
+ *           enum: [User, Admin]
+ *           description: User role, used to manage access to different ressources inside this application
+ *         createdAt:
+ *           type: string
+ *           format: date-time
+ *           description: Date when user has been created (ISO format)
+ *         updatedAt:
+ *           type: string
+ *           format: date-time
+ *           description: Date of last modification of the user (ISO format)
  *       example:
  *         id: 1
+ *         email: "contact@jdoe.com"
  *         name: "John Doe"
+ *         role: "Admin"
+ *         createdAt: "2025-06-12T00:00:00.000Z"
+ *         updatedAt: "2025-06-12T00:00:00.000Z"
  *     UserInput:
  *       type: object
  *       required:
  *         - name
+ *         - email
  *         - password
  *       properties:
  *         name:
  *           type: string
  *           minLength: 3
- *           description: Nom d'utilisateur
+ *           maxLength: 100
+ *           description: Username
+ *         email:
+ *           type: string
+ *           format: email
+ *           description: Email address (must be unique)
  *         password:
  *           type: string
  *           minLength: 8
- *           description: Mot de passe (min 8 caractères)
+ *           pattern: '^.*(?=.{8,})(?=.*[a-zA-Z])(?=.*\d)(?=.*[!#$%&? "]).*$'
+ *           description: Password (8 characters minimum, must contain letters, numbers and special characters)
  *       example:
  *         name: "John Doe"
+ *         email: "contact@jdoe.com"
  *         password: "Test1234!"
  *     LoginInput:
  *       type: object
  *       required:
- *         - name
  *         - password
  *       properties:
  *         name:
  *           type: string
+ *           description: Username (provide either name or email)
+ *         email:
+ *           type: string
+ *           format: email
+ *           description: Email address (provide either name or email)
  *         password:
  *           type: string
+ *           description: User password
  *       example:
- *         name: "John Doe"
+ *         email: "contact@jdoe.com"
  *         password: "Test1234!"
  *     AuthResponse:
  *       type: object
@@ -79,13 +112,32 @@ router.use(apiLimiter);
  *         status:
  *           type: string
  *           example: success
- *         message:
- *           type: string
  *         data:
  *           type: object
  *           properties:
  *             user:
- *               $ref: '#/components/schemas/User'
+ *               type: object
+ *               properties:
+ *                 id:
+ *                   type: integer
+ *                   description: User ID
+ *                 name:
+ *                   type: string
+ *                   description: Username
+ *                 role:
+ *                   type: string
+ *                   description: User role
+ *             accessToken:
+ *               type: string
+ *               description: JWT access token
+ *       example:
+ *         status: "success"
+ *         data:
+ *           user:
+ *             id: 1
+ *             name: "John Doe"
+ *             role: "User"
+ *           accessToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
  *     Error:
  *       type: object
  *       properties:
@@ -94,6 +146,10 @@ router.use(apiLimiter);
  *           example: error
  *         message:
  *           type: string
+ *           description: Error message
+ *       example:
+ *         status: "error"
+ *         message: "Invalid credentials"
  */
 
 /**
@@ -248,21 +304,31 @@ router.post("/logout", logoutUser);
  *                 status:
  *                   type: string
  *                   example: success
- *                 results:
- *                   type: integer
  *                 data:
- *                   type: object
- *                   properties:
- *                     users:
- *                       type: array
- *                       items:
- *                         $ref: '#/components/schemas/User'
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: integer
+ *                       name:
+ *                         type: string
+ *                       email:
+ *                         type: string
+ *                       role:
+ *                         type: string
+ *                       createdAt:
+ *                         type: string
+ *                         format: date-time
+ *                       updatedAt:
+ *                         type: string
+ *                         format: date-time
  *       401:
  *         description: Non authentifié
  *       403:
  *         description: Accès refusé
  */
-router.get("/", authenticate, getAllUser);
+router.get("/", authenticate, authorize(["Admin"]), getAllUser);
 
 /**
  * @swagger
@@ -287,7 +353,14 @@ router.get("/", authenticate, getAllUser);
  *                   type: object
  *                   properties:
  *                     user:
- *                       $ref: '#/components/schemas/User'
+ *                       type: object
+ *                       properties:
+ *                         id:
+ *                           type: integer
+ *                         name:
+ *                           type: string
+ *                         email:
+ *                           type: string
  *       401:
  *         description: Non authentifié
  */
@@ -322,13 +395,18 @@ router.get("/profile", authenticate, getProfile);
  *                 data:
  *                   type: object
  *                   properties:
- *                     user:
- *                       $ref: '#/components/schemas/User'
+ *                     id:
+ *                       type: integer
+ *                     name:
+ *                       type: string
+ *                     role:
+ *                       type: string
  *       401:
  *         description: Non authentifié
  *       404:
  *         description: Utilisateur non trouvé
  */
-router.get("/:id", authenticate, getUser);
+router.get("/:id", authenticate, authorize(["Admin"]), getUser);
+
 
 export default router;

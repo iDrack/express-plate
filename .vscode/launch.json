@@ -7,7 +7,7 @@
       "name": "Debug with Nodemon",
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev"],
-      "console": "integratedTerminal",
+      "console": "internalConsole",
       "internalConsoleOptions": "neverOpen",
       "skipFiles": ["<node_internals>/**"],
       "restart": true,

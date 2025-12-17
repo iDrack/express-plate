@@ -15,12 +15,16 @@ const port = process.env.PORT;
 
 app.use(express.json({ limit: "10kb" }));
 
+//Cookies
 app.use(cookieParser());
 
+//Swagger
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
+//Routes
 app.use("/users", UserRoutes);
 
+//Errors handling & Logging
 app.use(errorHandler);
 
 AppDataSource.initialize()
