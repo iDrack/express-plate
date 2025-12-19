@@ -156,7 +156,7 @@ router.use(apiLimiter);
  * @swagger
  * /users/register:
  *   post:
- *     summary: Créer un nouveau compte utilisateur
+ *     summary: Create new user account
  *     tags: [Users]
  *     requestBody:
  *       required: true
@@ -166,7 +166,7 @@ router.use(apiLimiter);
  *             $ref: '#/components/schemas/UserInput'
  *     responses:
  *       201:
- *         description: Utilisateur créé avec succès
+ *         description: User registered successfully
  *         content:
  *           application/json:
  *             schema:
@@ -177,15 +177,15 @@ router.use(apiLimiter);
  *               type: string
  *               example: jwt=abcde12345; HttpOnly; Secure
  *       400:
- *         description: Données invalides
+ *         description: Invalid data
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
  *       409:
- *         description: L'utilisateur existe déjà
+ *         description: User already exist
  *       429:
- *         description: Trop de tentatives
+ *         description: Too many attempts
  */
 router.post("/register", registerLimiter, createUser);
 
@@ -193,7 +193,7 @@ router.post("/register", registerLimiter, createUser);
  * @swagger
  * /users/login:
  *   post:
- *     summary: Se connecter avec nom d'utilisateur et mot de passe
+ *     summary: Login with user or e-mail and password
  *     tags: [Users]
  *     requestBody:
  *       required: true
@@ -203,7 +203,7 @@ router.post("/register", registerLimiter, createUser);
  *             $ref: '#/components/schemas/LoginInput'
  *     responses:
  *       200:
- *         description: Connexion réussie
+ *         description: Login successful
  *         content:
  *           application/json:
  *             schema:
@@ -214,13 +214,13 @@ router.post("/register", registerLimiter, createUser);
  *               type: string
  *               example: jwt=abcde12345; HttpOnly; Secure
  *       401:
- *         description: Identifiants invalides
+ *         description: Invalid credentials
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
  *       429:
- *         description: Trop de tentatives de connexion
+ *         description: Too many attempts
  */
 router.post("/login", loginLimiter, loginUser);
 
@@ -228,13 +228,13 @@ router.post("/login", loginLimiter, loginUser);
  * @swagger
  * /users/refresh:
  *   post:
- *     summary: Rafraîchir le token JWT
+ *     summary: Refresh JWT access token
  *     tags: [Users]
  *     security:
  *       - bearerAuth: []
  *     responses:
  *       200:
- *         description: Token rafraîchi avec succès
+ *         description: JWT access token refreshed
  *         content:
  *           application/json:
  *             schema:
@@ -243,17 +243,14 @@ router.post("/login", loginLimiter, loginUser);
  *                 status:
  *                   type: string
  *                   example: success
- *                 message:
- *                   type: string
- *                   example: Token rafraîchi
  *         headers:
  *           Set-Cookie:
  *             schema:
  *               type: string
  *       401:
- *         description: Token invalide ou expiré
+ *         description: Invalid or expired token
  *       429:
- *         description: Trop de tentatives
+ *         description: Too many attempts
  */
 router.post("/refresh", refreshLimiter, refreshToken);
 
@@ -261,11 +258,11 @@ router.post("/refresh", refreshLimiter, refreshToken);
  * @swagger
  * /users/logout:
  *   post:
- *     summary: Se déconnecter (supprime le cookie JWT)
+ *     summary: Disconnect current user and destroy ant JWT
  *     tags: [Users]
  *     responses:
  *       200:
- *         description: Déconnexion réussie
+ *         description: Logout successful
  *         content:
  *           application/json:
  *             schema:
@@ -276,7 +273,7 @@ router.post("/refresh", refreshLimiter, refreshToken);
  *                   example: success
  *                 message:
  *                   type: string
- *                   example: Déconnexion réussie
+ *                   example Logout successful
  *         headers:
  *           Set-Cookie:
  *             schema:
@@ -289,13 +286,13 @@ router.post("/logout", logoutUser);
  * @swagger
  * /users:
  *   get:
- *     summary: Récupère tous les utilisateurs (Admin uniquement)
+ *     summary: Get every users data, need to be Admin
  *     tags: [Users]
  *     security:
  *       - bearerAuth: []
  *     responses:
  *       200:
- *         description: Liste des utilisateurs
+ *         description: User datas
  *         content:
  *           application/json:
  *             schema:
@@ -324,9 +321,9 @@ router.post("/logout", logoutUser);
  *                         type: string
  *                         format: date-time
  *       401:
- *         description: Non authentifié
+ *         description: Not logged in
  *       403:
- *         description: Accès refusé
+ *         description: Access denied
  */
 router.get("/", authenticate, authorize(["Admin"]), getAllUser);
 
@@ -334,13 +331,13 @@ router.get("/", authenticate, authorize(["Admin"]), getAllUser);
  * @swagger
  * /users/profile:
  *   get:
- *     summary: Récupère le profil de l'utilisateur connecté
+ *     summary: Get the profile for the user currently logged in
  *     tags: [Users]
  *     security:
  *       - bearerAuth: []
  *     responses:
  *       200:
- *         description: Profil utilisateur
+ *         description: User profile
  *         content:
  *           application/json:
  *             schema:
@@ -362,7 +359,7 @@ router.get("/", authenticate, authorize(["Admin"]), getAllUser);
  *                         email:
  *                           type: string
  *       401:
- *         description: Non authentifié
+ *         description: Not logged in
  */
 router.get("/profile", authenticate, getProfile);
 
@@ -370,7 +367,7 @@ router.get("/profile", authenticate, getProfile);
  * @swagger
  * /users/{id}:
  *   get:
- *     summary: Récupère un utilisateur par son ID
+ *     summary: Get user data by specified id, need to be Admin
  *     tags: [Users]
  *     security:
  *       - bearerAuth: []
@@ -380,10 +377,10 @@ router.get("/profile", authenticate, getProfile);
  *         required: true
  *         schema:
  *           type: integer
- *         description: ID de l'utilisateur
+ *         description: User id
  *     responses:
  *       200:
- *         description: Détails de l'utilisateur
+ *         description: User data
  *         content:
  *           application/json:
  *             schema:
@@ -402,9 +399,9 @@ router.get("/profile", authenticate, getProfile);
  *                     role:
  *                       type: string
  *       401:
- *         description: Non authentifié
+ *         description: Not logged in
  *       404:
- *         description: Utilisateur non trouvé
+ *         description: User not found
  */
 router.get("/:id", authenticate, authorize(["Admin"]), getUser);
 

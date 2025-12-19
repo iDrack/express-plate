@@ -19,7 +19,8 @@ app.use(express.json({ limit: "10kb" }));
 app.use(cookieParser());
 
 //Swagger
-app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+if (process.env.MODE !== "production")
+    app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 //Routes
 app.use("/users", UserRoutes);
@@ -31,9 +32,10 @@ AppDataSource.initialize()
     .then(() => {
         console.log("Database connected successfully.");
         app.listen(port, () => {
-            console.log(
-                `Server running on port ${port} in ${process.env.MODE} mode`
-            );
+            if (process.env.MODE !== "production")
+                console.log(
+                    `Server running on port ${port} in ${process.env.MODE} mode`
+                );
             console.log(
                 `Swagger docs available at http://localhost:${port}/api-docs`
             );

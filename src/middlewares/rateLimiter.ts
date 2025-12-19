@@ -6,7 +6,7 @@ export const apiLimiter = rateLimit({
     max: 100,
     message: {
         status: "fail",
-        message: "Trop de requête. Veuillez réessayer plus tard."
+        message: "Too many requests, please try again later."
     },
     standardHeaders: true,
     legacyHeaders: false,
@@ -18,7 +18,7 @@ export const registerLimiter = rateLimit({
     max: 2,
     message: {
         status: "fail",
-        message: "Trop de compte créer depuis cette IP. Veuillez réessayer plus tard."
+        message: "Too many register attempts, please try again later."
     },
     standardHeaders: true,
     legacyHeaders: false,
@@ -30,7 +30,7 @@ export const loginLimiter = rateLimit({
     max: 5,
     message: {
         status: "fail",
-        message: "Trop de tentatives de connexion. Veuillez réessayer plus tard."
+        message: "Too many login attempts, please try again later."
     },
     standardHeaders: true,
     legacyHeaders: false,
@@ -43,7 +43,7 @@ export const refreshLimiter = rateLimit({
     max: 10,
     message: {
         status: "fail",
-        message: "Trop de tentatives de rafraîchissement. Veuillez réessayer plus tard."
+        message: "Too many refresh attempts, please try again later."
     },
     standardHeaders: true,
     legacyHeaders: false,

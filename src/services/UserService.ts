@@ -15,7 +15,7 @@ export const loginUser = async (
     try {
         const { name, email, password } = req.body;
         if (!password || (!name && !email)) {
-            throw new AppError("Username or password incorrect", 400);
+            throw new AppError("Invalid credentials.", 400);
         }
         //Check infos against user login data
         let user;
@@ -81,7 +81,7 @@ export const logoutUser = async (
 
         res.status(200).json({
             status: "success",
-            message: "Logout successful",
+            message: "Logout successful.",
         });
     } catch (error) {
         next(error);
@@ -125,7 +125,7 @@ export const getProfile = async (
 ) => {
     try {
         if (!req.user.id) {
-            throw new AppError("You need to be logged in.", 401);
+            throw new AppError("You need to be logged in to acess your profile.", 401);
         }
 
         const user = await userRepository.findOne({
@@ -168,7 +168,7 @@ export const getUser = async (
 ) => {
     try {
         if (req.params.id === undefined) {
-            throw new Error("Missing user id.");
+            throw new Error("Missing userId.");
         } else {
             const user = await userRepository.findOne({
                 where: { id: parseInt(req.params.id) },
@@ -199,9 +199,23 @@ export const createUser = async (
                 400
             );
         }
-        if (!passwordRegex.test(password)) {
-            throw new AppError("Password format is invalid.", 400);
+        if(await userRepository.findOne({ where: { email }})) {
+            throw new AppError(
+                `E-mail :${email} is already in use, please try a different one.`,
+                409,
+            )
+        }  
+        if(await userRepository.findOne({ where: { name }})) {
+            throw new AppError(
+                `Username :${email} is already in use, please try a different one.`,
+                409,
+            )
         }
+
+        if (!passwordRegex.test(password)) {
+            throw new AppError("Invalid password format.", 400);
+        }
+
         const hash = await bcrypt.hash(password, 3);
         const user = userRepository.create({
             name: name,
