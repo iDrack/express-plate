@@ -273,7 +273,7 @@ router.post("/refresh", refreshLimiter, refreshToken);
  *                   example: success
  *                 message:
  *                   type: string
- *                   example Logout successful
+ *                   example: Logout successful
  *         headers:
  *           Set-Cookie:
  *             schema:
