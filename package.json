@@ -6,7 +6,7 @@
   "scripts": {
     "build": "npx tsc",
     "dev": "nodemon",
-    "dockerup": "docker compose up -d",
+    "docker-compose-up": "docker compose up -d",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

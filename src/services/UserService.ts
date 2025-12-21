@@ -4,20 +4,24 @@ import { User } from "../models/User.js";
 import type { Request, Response, NextFunction } from "express";
 import { AppError } from "../middlewares/errorHandler.js";
 import { JwtService } from "./JwtService.js";
+import type { Role } from "../models/Role.js";
 
 const userRepository = AppDataSource.getRepository(User);
 
-export const loginUser = async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-) => {
-    try {
-        const { name, email, password } = req.body;
-        if (!password || (!name && !email)) {
-            throw new AppError("Invalid credentials.", 400);
-        }
-        //Check infos against user login data
+/**
+ * Test user credentials, an email or a username is needed to identify an user.
+ * If credentials are correct, returns the user identified by it's username or email.
+ * If the test fails or the user cannot be found, throw an exception.
+ * @param name Username of the user trying to log in.
+ * @param email Email of the user trying to log in.
+ * @param password Password of the user trying to log in.
+ * @returns 
+ */
+export const testCredentials = async (
+    name: string,
+    email: string,
+    password: string
+): Promise<User> => {
         let user;
         if (email) {
             user = await userRepository.findOne({ where: { email } });
@@ -33,8 +37,18 @@ export const loginUser = async (
         if (!isPasswordValid) {
             throw new AppError("Incorrect password.", 401);
         }
+    return user;
+}
 
-        //Créaations des Tokens
+/**
+ * Generate an accessToken and a refreshToken for a specified User.
+ * @param user User to generate tokens for.
+ * @returns 
+ */
+const _login = ( user: User ): {
+        accessToken: string,
+        refreshToken: string
+    } => {
         const accessToken = JwtService.generateAccessToken({
             id: user.id,
             name: user.name,
@@ -46,16 +60,33 @@ export const loginUser = async (
             name: user.name,
             role: user.role,
         });
+    return {
+        accessToken: accessToken,
+        refreshToken: refreshToken
+    }
+}
 
-        res.cookie("refreshToken", refreshToken, {
+/**
+ * Log a User then add user's accessToken to response body and refreshToken to the cookies.
+ * @param res Response to send back with JWT Tokens.
+ * @param status HTTP Status of the response.
+ * @param user User getting logged in.
+ */
+const _prepareTokens = async (
+    res: Response,
+    status: number,
+    user: User
+) => {
+    const {accessToken, refreshToken} = _login(user);
+
+    res.cookie("refreshToken", refreshToken, {
             httpOnly: true,
             secure: process.env.MODE_ENV === "production",
             sameSite: "strict",
             maxAge: 30 * 24 * 60 * 60 * 1000, //30 days
             path: "/users/refresh",
         });
-        //TODO: auto connect user
-        res.status(200).json({
+        res.status(status).json({
             status: "success",
             data: {
                 user: {
@@ -66,6 +97,106 @@ export const loginUser = async (
                 accessToken,
             },
         });
+}
+
+
+export const createUser = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+    try {
+        const passwordRegex =
+            /^.*(?=.{8,})(?=.*[a-zA-Z])(?=.*\d)(?=.*[!#$%&? "]).*$/;
+        const { name, email, password } = req.body;
+        if (!name || !email || !password) {
+            throw new AppError(
+                "You need a name, an e-mail and a password to create a user account.",
+                400
+            );
+        }
+        if(await userRepository.findOne({ where: { email }})) {
+            throw new AppError(
+                `E-mail :${email} is already in use, please try a different one.`,
+                409,
+            )
+        }  
+        if(await userRepository.findOne({ where: { name }})) {
+            throw new AppError(
+                `Username :${email} is already in use, please try a different one.`,
+                409,
+            )
+        }
+
+        if (!passwordRegex.test(password)) {
+            throw new AppError("Invalid password format.", 400);
+        }
+
+        const hash = await bcrypt.hash(password, 3);
+        const user = userRepository.create({
+            name: name,
+            email: email,
+            password: hash,
+        });
+        await userRepository.save(user);
+        await _prepareTokens(res,201,user);
+        /* const {accessToken, refreshToken} = _login(user);
+
+        res.cookie("refreshToken", refreshToken, {
+            httpOnly: true,
+            secure: process.env.MODE_ENV === "production",
+            sameSite: "strict",
+            maxAge: 30 * 24 * 60 * 60 * 1000, //30 days
+            path: "/users/refresh",
+        });
+        res.status(201).json({
+            status: "success",
+            data: {
+                user: {
+                    id: user.id,
+                    name: user.name,
+                    role: user.role,
+                },
+                accessToken,
+            },
+        }); */
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const loginUser = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+    try {
+        const { name, email, password } = req.body;
+        if (!password || (!name && !email)) {
+            throw new AppError("Invalid credentials.", 400);
+        }
+        const user = await testCredentials(name, email, password);
+        await _prepareTokens(res,200,user);
+        /* const {accessToken, refreshToken} = _login(user);
+
+        res.cookie("refreshToken", refreshToken, {
+            httpOnly: true,
+            secure: process.env.MODE_ENV === "production",
+            sameSite: "strict",
+            maxAge: 30 * 24 * 60 * 60 * 1000, //30 days
+            path: "/users/refresh",
+        });
+        res.status(200).json({
+            status: "success",
+            data: {
+                user: {
+                    id: user.id,
+                    name: user.name,
+                    role: user.role,
+                },
+                accessToken,
+            },
+        }); */
     } catch (error) {
         next(error);
     }
@@ -179,57 +310,6 @@ export const getUser = async (
             }
             res.json({ status: "success", data: user });
         }
-    } catch (error) {
-        next(error);
-    }
-};
-
-export const createUser = async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-) => {
-    try {
-        const passwordRegex =
-            /^.*(?=.{8,})(?=.*[a-zA-Z])(?=.*\d)(?=.*[!#$%&? "]).*$/;
-        const { name, email, password } = req.body;
-        if (!name || !email || !password) {
-            throw new AppError(
-                "You need a name, an e-mail and a password to create a user account.",
-                400
-            );
-        }
-        if(await userRepository.findOne({ where: { email }})) {
-            throw new AppError(
-                `E-mail :${email} is already in use, please try a different one.`,
-                409,
-            )
-        }  
-        if(await userRepository.findOne({ where: { name }})) {
-            throw new AppError(
-                `Username :${email} is already in use, please try a different one.`,
-                409,
-            )
-        }
-
-        if (!passwordRegex.test(password)) {
-            throw new AppError("Invalid password format.", 400);
-        }
-
-        const hash = await bcrypt.hash(password, 3);
-        const user = userRepository.create({
-            name: name,
-            email: email,
-            password: hash,
-        });
-        await userRepository.save(user);
-        res.status(201).json({
-            status: "success",
-            data: {
-                id: user.id,
-                name: user.name,
-            },
-        });
     } catch (error) {
         next(error);
     }
