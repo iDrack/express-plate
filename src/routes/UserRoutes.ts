@@ -1,5 +1,17 @@
 import { Router } from "express";
-import { createUser, deleteUser, deleteUserById, getAllUser, getProfile, getUser, loginUser, logoutUser, refreshToken, updatePassword, updateUser } from "../services/UserService.js";
+import {
+    createUser,
+    deleteUser,
+    deleteUserById,
+    getAllUser,
+    getProfile,
+    getUser,
+    loginUser,
+    logoutUser,
+    refreshToken,
+    updatePassword,
+    updateUser,
+} from "../services/UserService.js";
 import { authenticate, authorize } from "../middlewares/authMiddleware.js";
 import {
     apiLimiter,
@@ -35,7 +47,7 @@ router.use(apiLimiter);
  *           description: User e-mail address (must be a unique address)
  *         name:
  *           type: string
- *           description: Username (must be unique) 
+ *           description: Username (must be unique)
  *         role:
  *           type: string
  *           enum: [User, Admin]
@@ -98,6 +110,41 @@ router.use(apiLimiter);
  *       example:
  *         email: "contact@jdoe.com"
  *         password: "Test1234!"
+ *     UserUpdate:
+ *       type: object
+ *       properties:
+ *         name:
+ *           type: string
+ *           description: New username (optional)
+ *         email:
+ *           type: string
+ *           format: email
+ *           description: New email address (optional)
+ *         role:
+ *           type: string
+ *           enum: [USER, ADMIN]
+ *           description: New user role (optional)
+ *       example:
+ *         name: "John Doe"
+ *         email: "john.doe@test.com"
+ *         role: "USER"
+ *     PasswordUpdate:
+ *       type: object
+ *       required:
+ *         - password
+ *         - newPassword
+ *       properties:
+ *         password:
+ *           type: string
+ *           description: Current password
+ *         newPassword:
+ *           type: string
+ *           minLength: 8
+ *           pattern: '^.*(?=.{8,})(?=.*[a-zA-Z])(?=.*\\d)(?=.*[!#$%&? "]).*$'
+ *           description: New password (8 characters minimum, must contain letters, numbers and special characters)
+ *       example:
+ *         password: "Test1234!"
+ *         newPassword: "P@ssword1234"
  *     AuthResponse:
  *       type: object
  *       properties:
@@ -397,13 +444,177 @@ router.get("/profile", authenticate, getProfile);
  */
 router.get("/:id", authenticate, authorize(["Admin"]), getUser);
 
-//TODO: add swagger doc, description + model test
+/**
+ * @swagger
+ * /users:
+ *   put:
+ *     summary: Update current user profile
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/UserUpdate'
+ *     responses:
+ *       200:
+ *         description: Profile updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/AuthResponse'
+ *         headers:
+ *           Set-Cookie:
+ *             schema:
+ *               type: string
+ *               example: jwt=abcde12345; HttpOnly; Secure
+ *       401:
+ *         description: Not logged in
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 router.put("/", authenticate, updateUser);
 
-router.put("/passwordChange", authenticate, updatePassword)
+/**
+ * @swagger
+ * /users/passwordChange:
+ *   put:
+ *     summary: Change current user password
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/PasswordUpdate'
+ *     responses:
+ *       200:
+ *         description: Password updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/AuthResponse'
+ *         headers:
+ *           Set-Cookie:
+ *             schema:
+ *               type: string
+ *               example: jwt=abcde12345; HttpOnly; Secure
+ *       400:
+ *         description: Invalid password format
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         description: Not logged in or incorrect current password
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+router.put("/passwordChange", authenticate, updatePassword);
 
-router.delete('/',authenticate, deleteUser);
+/**
+ * @swagger
+ * /users:
+ *   delete:
+ *     summary: Delete current user account
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - password
+ *             properties:
+ *               password:
+ *                 type: string
+ *                 description: Current password for confirmation
+ *             example:
+ *               password: "Test1234!"
+ *     responses:
+ *       200:
+ *         description: Account deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Account deleted successfully.
+ *         headers:
+ *           Set-Cookie:
+ *             schema:
+ *               type: string
+ *               example: jwt=; Max-Age=0
+ *       401:
+ *         description: Not logged in or incorrect password
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+router.delete("/", authenticate, deleteUser);
 
-router.delete('/:id', authenticate, authorize(['ADMIN']), deleteUserById);
+/**
+ * @swagger
+ * /users/{id}:
+ *   delete:
+ *     summary: Delete user by id, need to be Admin
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: User id to delete
+ *     responses:
+ *       200:
+ *         description: User deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: success
+ *                 message:
+ *                   type: string
+ *                   example: User 1 has been deleted successfully.
+ *       401:
+ *         description: Not logged in
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       403:
+ *         description: Access denied
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: User not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+router.delete("/:id", authenticate, authorize(["ADMIN"]), deleteUserById);
 
 export default router;

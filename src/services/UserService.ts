@@ -108,20 +108,12 @@ export const getUserById = async (userId: number): Promise<User> => {
     return user;
 };
 
-export const checkUserExist = (userId: number): Boolean => {
+export const checkUserExist = async (userId: number): Promise<boolean> => {
     try {
-        userRepository
-            .findOne({
-                where: { id: userId },
-            })
-            .then((user) => {
-                if (user) {
-                    return true;
-                } else {
-                    return false;
-                }
-            });
-        return false;
+        const user = await userRepository.findOne({
+            where: { id: userId },
+        });
+        return user !== undefined;
     } catch (error) {
         console.log(error);
         return false;
@@ -417,7 +409,7 @@ export const deleteUser = async (
                 401
             );
         }
-        userRepository.delete(user);
+        userRepository.delete(user.id);
         res.clearCookie("refreshToken", { path: "/users/refresh" });
 
         res.status(200).json({
@@ -440,7 +432,7 @@ export const deleteUserById = async (
             throw new AppError("Missing userId", 404);
         }
         const user = await getUserById(parseInt(userId));
-        userRepository.delete(user);
+        userRepository.delete(user.id);
         res.status(200).json({
             status: "success",
             message: `User ${userId} has been deleted successfully.`,

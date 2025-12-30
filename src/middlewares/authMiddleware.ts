@@ -31,7 +31,7 @@ export const authenticate = (
             throw new AppError("You need to be logged in.", 401);
         }
         const token = authHeader.split(" ")[1];
-        const decoded = JwtService.verifyAccessToken(token as string);
+        const decoded = JwtService.verifyAccessToken(token as string);       
 
         if (!checkUserExist(decoded.id))
             throw new AppError("User no longer exists.", 401);
