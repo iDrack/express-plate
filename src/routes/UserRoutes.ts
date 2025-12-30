@@ -1,13 +1,5 @@
 import { Router } from "express";
-import {
-    getAllUser,
-    getUser,
-    createUser,
-    loginUser,
-    refreshToken,
-    getProfile,
-    logoutUser,
-} from "../services/UserService.js";
+import { UserService } from "../services/UserService.js";
 import { authenticate, authorize } from "../middlewares/authMiddleware.js";
 import {
     apiLimiter,
@@ -17,6 +9,7 @@ import {
 } from "../middlewares/rateLimiter.js";
 
 const router = Router();
+const userService = new UserService();
 
 router.use(apiLimiter);
 
@@ -187,7 +180,7 @@ router.use(apiLimiter);
  *       429:
  *         description: Too many attempts
  */
-router.post("/register", registerLimiter, createUser);
+router.post("/register", registerLimiter, userService.createUser);
 
 /**
  * @swagger
@@ -222,7 +215,7 @@ router.post("/register", registerLimiter, createUser);
  *       429:
  *         description: Too many attempts
  */
-router.post("/login", loginLimiter, loginUser);
+router.post("/login", loginLimiter, userService.loginUser);
 
 /**
  * @swagger
@@ -252,7 +245,7 @@ router.post("/login", loginLimiter, loginUser);
  *       429:
  *         description: Too many attempts
  */
-router.post("/refresh", refreshLimiter, refreshToken);
+router.post("/refresh", refreshLimiter, userService.refreshToken);
 
 /**
  * @swagger
@@ -280,7 +273,7 @@ router.post("/refresh", refreshLimiter, refreshToken);
  *               type: string
  *               example: jwt=; Max-Age=0
  */
-router.post("/logout", logoutUser);
+router.post("/logout", userService.logoutUser);
 
 /**
  * @swagger
@@ -325,7 +318,7 @@ router.post("/logout", logoutUser);
  *       403:
  *         description: Access denied
  */
-router.get("/", authenticate, authorize(["Admin"]), getAllUser);
+router.get("/", authenticate, authorize(["Admin"]), userService.getAllUser);
 
 /**
  * @swagger
@@ -361,7 +354,7 @@ router.get("/", authenticate, authorize(["Admin"]), getAllUser);
  *       401:
  *         description: Not logged in
  */
-router.get("/profile", authenticate, getProfile);
+router.get("/profile", authenticate, userService.getProfile);
 
 /**
  * @swagger
@@ -403,7 +396,9 @@ router.get("/profile", authenticate, getProfile);
  *       404:
  *         description: User not found
  */
-router.get("/:id", authenticate, authorize(["Admin"]), getUser);
+router.get("/:id", authenticate, authorize(["Admin"]), userService.getUser);
+
+//TODO: add route for update and delete (see IUserService)
 
 
 export default router;
