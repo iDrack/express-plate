@@ -1,6 +1,7 @@
 import type { Request, Response, NextFunction } from "express";
 import { JwtService } from "../services/JwtService.js";
 import { AppError } from "./errorHandler.js";
+import { checkUserExist } from "../services/UserService.js";
 
 declare global {
     namespace Express {
@@ -32,6 +33,9 @@ export const authenticate = (
         const token = authHeader.split(" ")[1];
         const decoded = JwtService.verifyAccessToken(token as string);
 
+        if (!checkUserExist(decoded.id))
+            throw new AppError("User no longer exists.", 401);
+
         req.user = {
             id: decoded.id,
             name: decoded.name,
@@ -44,16 +48,26 @@ export const authenticate = (
 };
 
 export const authorize = (allowedRoles: string[]) => {
-    allowedRoles.forEach(role => {
-        role = role.toLowerCase()
+    allowedRoles.forEach((role) => {
+        role = role.toLowerCase();
     });
     return (req: AuthRequest, res: Response, next: NextFunction) => {
-        if (! req.user) {
-            next(new AppError("You need to be logged in to access this ressource.", 401));
+        if (!req.user) {
+            next(
+                new AppError(
+                    "You need to be logged in to access this ressource.",
+                    401
+                )
+            );
         }
-        if (! allowedRoles.includes(req.user.role.toLowerCase())) {
-            next(new AppError("Forbidden: Insuffisant rights to access this ressource.", 403));
+        if (!allowedRoles.includes(req.user.role.toLowerCase())) {
+            next(
+                new AppError(
+                    "Forbidden: Insuffisant rights to access this ressource.",
+                    403
+                )
+            );
         }
         next();
-    }
-}
+    };
+};
