@@ -16,7 +16,7 @@ export class JwtService {
 
     static generateAccessToken(payload: JwtPayload): string {
         if (!this.SECRET) {
-            throw new AppError("MMissing JWT secret in .env.", 500);
+            throw new AppError("Missing JWT secret in .env.", 500);
         }
         return jwt.sign(payload, this.SECRET, {
             expiresIn: this.EXPIRES_IN as string,
