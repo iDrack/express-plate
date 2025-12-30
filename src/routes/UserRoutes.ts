@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { createUser, getAllUser, getProfile, getUser, loginUser, logoutUser, refreshToken } from "../services/UserService.js";
+import { createUser, deleteUser, deleteUserById, getAllUser, getProfile, getUser, loginUser, logoutUser, refreshToken, updatePassword, updateUser } from "../services/UserService.js";
 import { authenticate, authorize } from "../middlewares/authMiddleware.js";
 import {
     apiLimiter,
@@ -397,7 +397,13 @@ router.get("/profile", authenticate, getProfile);
  */
 router.get("/:id", authenticate, authorize(["Admin"]), getUser);
 
-//TODO: add route for update and delete (see IUserService)
+//TODO: add swagger doc, description + model test
+router.put("/", authenticate, updateUser);
 
+router.put("/passwordChange", authenticate, updatePassword)
+
+router.delete('/',authenticate, deleteUser);
+
+router.delete('/:id', authenticate, authorize(['ADMIN']), deleteUserById);
 
 export default router;

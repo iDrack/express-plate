@@ -434,7 +434,7 @@ export const deleteUserById = async (
     next: NextFunction
 ) => {
     try {
-        const userId = req.params.userId;
+        const userId = req.params.id;
 
         if (userId === undefined) {
             throw new AppError("Missing userId", 404);
