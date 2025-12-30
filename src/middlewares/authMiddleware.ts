@@ -1,7 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
 import { JwtService } from "../services/JwtService.js";
 import { AppError } from "./errorHandler.js";
-import type { Role } from "../models/Role.js";
 
 declare global {
     namespace Express {
@@ -50,7 +49,7 @@ export const authorize = (allowedRoles: string[]) => {
     });
     return (req: AuthRequest, res: Response, next: NextFunction) => {
         if (! req.user) {
-            next(new AppError("You need to e logged in to access this ressource.", 401));
+            next(new AppError("You need to be logged in to access this ressource.", 401));
         }
         if (! allowedRoles.includes(req.user.role.toLowerCase())) {
             next(new AppError("Forbidden: Insuffisant rights to access this ressource.", 403));
