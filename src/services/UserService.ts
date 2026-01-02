@@ -268,7 +268,6 @@ export const getProfile = async (
         if (!user) {
             throw new AppError("User not found.", 404);
         }
-        req.log.info('test')
 
         res.status(200).json({
             status: "success",

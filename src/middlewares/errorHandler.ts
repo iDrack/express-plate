@@ -1,4 +1,5 @@
 import type { Request, Response, NextFunction } from 'express'
+import { logger } from '../config/logger.js'
 
 export class AppError extends Error {
   statusCode: number
@@ -7,7 +8,7 @@ export class AppError extends Error {
   constructor(message: string, statusCode: number) {
     super(message)
     this.statusCode = statusCode
-    this.status = `${statusCode}`.startsWith('4') ? 'fail' : 'error'
+    this.status = `${statusCode}`
   }
 }
 
@@ -18,13 +19,18 @@ export const errorHandler = (
   next: NextFunction,
 ) => {
   if (err instanceof AppError) {
+    if(req.user.id) {
+      logger.error(`user id: ${req.user.id} - ${err.message}`)
+    } else {
+      logger.error(`${err.message}`)
+    }
     return res.status(err.statusCode).json({
       status: err.status,
       message: err.message,
     })
   }
 
-  console.error('Error:', err.stack || err)
+  logger.error(err.stack || err)
   return res.status(500).json({
     status: 'error',
     message: process.env.NODE_ENV === 'development' ? err.message : 'Internal server error',

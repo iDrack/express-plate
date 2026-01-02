@@ -7,6 +7,7 @@ import { AppDataSource } from "./config/database.js";
 import { errorHandler } from "./middlewares/errorHandler.js";
 import UserRoutes from "./routes/UserRoutes.js";
 import { swaggerSpec } from "./config/swagger.js";
+import { logger } from "./config/logger.js";
 
 const app = express();
 const port = process.env.PORT;
@@ -36,16 +37,16 @@ AppDataSource.initialize()
         console.log("Database connected successfully.");
         app.listen(port, () => {
             if (process.env.NODE_ENV !== "production")
-                console.log(
+                logger.info(
                     `Server running on port ${port} in ${process.env.NODE_ENV} mode`
                 );
-            console.log(
+            logger.info(
                 `Swagger docs available at http://localhost:${port}/api-docs`
-            );
+            )/*  */
         });
     })
     .catch((error) => {
-        console.error("Error connecting to database:", error);
+        logger.error("Error connecting to database:", error);
         process.exit(1);
     });
 
