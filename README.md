@@ -13,7 +13,8 @@ Ready to use node boiler plate using Typescript and TypeORM with user and roles 
    
    ```
     PORT=
-    MODE=
+    NODE_ENV=
+    LOG_LEVEL=
 
     DOCKER_CONTAINER_NAME=
 
