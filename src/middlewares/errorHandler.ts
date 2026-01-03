@@ -1,38 +1,39 @@
-import type { Request, Response, NextFunction } from 'express'
-import { logger } from '../config/logger.js'
+import type { Request, Response, NextFunction } from "express";
+import { logger } from "../config/logger.js";
 
 export class AppError extends Error {
-  statusCode: number
-  status: string
+    statusCode: number;
+    status: string;
 
-  constructor(message: string, statusCode: number) {
-    super(message)
-    this.statusCode = statusCode
-    this.status = `${statusCode}`
-  }
+    constructor(message: string, statusCode: number) {
+        super(message);
+        this.statusCode = statusCode;
+        this.status = `${statusCode}`;
+    }
 }
 
 export const errorHandler = (
-  err: Error | AppError,
-  req: Request,
-  res: Response,
-  next: NextFunction,
+    err: Error | AppError,
+    req: Request,
+    res: Response,
+    next: NextFunction
 ) => {
-  if (err instanceof AppError) {
-    if(req.user.id) {
-      logger.error(`user id: ${req.user.id} - ${err.message}`)
-    } else {
-      logger.error(`${err.message}`)
+    if (err instanceof AppError) {
+        logger.error(
+            `user id: ${req.user?.id || "anonymous"} - ${err.message}`
+        );
+        return res.status(err.statusCode).json({
+            status: err.status,
+            message: err.message,
+        });
     }
-    return res.status(err.statusCode).json({
-      status: err.status,
-      message: err.message,
-    })
-  }
 
-  logger.error(err.stack || err)
-  return res.status(500).json({
-    status: 'error',
-    message: process.env.NODE_ENV === 'development' ? err.message : 'Internal server error',
-  })
-}
+    logger.error(err.stack || err);
+    return res.status(500).json({
+        status: "error",
+        message:
+            process.env.NODE_ENV === "development"
+                ? err.message
+                : "Internal server error",
+    });
+};
