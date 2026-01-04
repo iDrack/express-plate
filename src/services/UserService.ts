@@ -262,7 +262,7 @@ export const getProfile = async (
 
         const user = await userRepository.findOne({
             where: { id: req.user.id },
-            select: ["id", "name", "email"],
+            select: ["id", "name", "email", "role"],
         });
 
         if (!user) {

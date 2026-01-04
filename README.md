@@ -5,31 +5,32 @@ Ready to use node boiler plate using Typescript and TypeORM with user and roles 
 ## Setup
 
 1. Clone the repository
-2. Install dependencies: 
-   
+2. Install dependencies:
    `npm install`
 
 3. Create .env file like so:
-   
-   ```
-    PORT=
-    NODE_ENV=
-    LOG_LEVEL=
 
-    DOCKER_CONTAINER_NAME=
+```text
+PORT=
+NODE_ENV=
 
-    JWT_SECRET=
-    JWT_EXPIRES_IN=
-    JWT_REFRESH_SECRET=
-    JWT_REFRESH_EXPIRES_IN=
+LOG_LEVEL=[0 - 6]
+LOG_PERSIST=[true - false]
 
-    DATABASE_NAME=
-    DATABASE_USER=
-    DATABASE_PASSWORD=
-    DATABASE_PORT=
-   ```
+DOCKER_CONTAINER_NAME=
 
-## Features:
+JWT_SECRET=
+JWT_EXPIRES_IN=
+JWT_REFRESH_SECRET=
+JWT_REFRESH_EXPIRES_IN=
+
+DATABASE_USER=
+DATABASE_NAME=
+DATABASE_PASSWORD=
+DATABASE_PORT=
+```
+
+## Features
 
 - database : PostgreSQL
 - auth : JWT

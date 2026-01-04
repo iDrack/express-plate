@@ -37,7 +37,7 @@ app.use(errorHandler);
 
 AppDataSource.initialize()
     .then(() => {
-        console.log("Database connected successfully.");
+        logger.info("Database connected successfully.");
         app.listen(port, () => {
             if (process.env.NODE_ENV !== "production")
                 logger.info(

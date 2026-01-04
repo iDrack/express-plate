@@ -26,7 +26,7 @@ export const httpLogger = (req: Request, res: Response, next: NextFunction) => {
             `← ${req.method} ${req.originalUrl} ${res.statusCode}`, {
                 duration: `${duration}ms`,
                 statusCode: res.statusCode,
-                userId: req.user?.id || "anonymous",
+                userID: req.user?.id || "anonymous",
             }
         );
 
