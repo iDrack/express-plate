@@ -19,6 +19,14 @@ export interface AuthRequest extends Request {
     user: { id: number; name: string; role: string };
 }
 
+/**
+ * Check if the user is logged in. This is accomplished by testing an Bearer token in the request header.
+ * After the user is logged in, the user datas are then stored inside the request under the 'user' object and correspond to the interface AuthRequest.
+ * In the instance a token return a deleted user the authentification will fail.
+ * @param req Incoming request.
+ * @param res Response for the incoming request.
+ * @param next Function to execute after this one.
+ */
 export const authenticate = (
     req: Request,
     res: Response,
@@ -47,6 +55,11 @@ export const authenticate = (
     }
 };
 
+/**
+ * Check if the logged in user posses the required role to access a specific resource.
+ * @param allowedRoles Array of allowed roles.
+ * @returns NextFunction or AppError.
+ */
 export const authorize = (allowedRoles: string[]) => {
     allowedRoles.forEach((role) => {
         role = role.toLowerCase();

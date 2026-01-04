@@ -14,6 +14,11 @@ export class JwtService {
     private static REFRESH_EXPIRES_IN =
         process.env.JWT_REFRESH_EXPIRES_IN || "7d";
 
+    /**
+     * Create JWT access token based on user data
+     * @param payload JWT payload for user data
+     * @returns JWT access token
+     */
     static generateAccessToken(payload: JwtPayload): string {
         if (!this.SECRET) {
             throw new AppError("Missing JWT secret in .env.", 500);
@@ -23,6 +28,11 @@ export class JwtService {
         });
     }
 
+    /**
+     * Create JWT refresh token based on user data
+     * @param payload JWT payload for user data
+     * @returns JWT refresh token
+     */
     static generateRefreshToken(payload: JwtPayload): string {
         if (!this.REFRESH_SECRET) {
             throw new AppError("Missing JWT refresh token in .env.", 500);
@@ -32,6 +42,11 @@ export class JwtService {
         });
     }
 
+    /**
+     * Check if a JWT is valid or not
+     * @param token JWT access to token to test
+     * @returns JWTPayload for tested access token
+     */
     static verifyAccessToken(token: string): JwtPayload {
         try {
             return jwt.verify(token, this.SECRET) as JwtPayload;
@@ -40,6 +55,11 @@ export class JwtService {
         }
     }
 
+    /**
+     * Check if a JWT is valid or not
+     * @param token JWT refresh to token to test
+     * @returns JWTPayload for tested refresh token
+     */
     static verifyRefreshToken(token: string): JwtPayload {
         try {
             return jwt.verify(token, this.REFRESH_SECRET) as JwtPayload;

@@ -12,6 +12,15 @@ export class AppError extends Error {
     }
 }
 
+/**
+ * Handle error logging for the API. If the passed error is an instance of AppError, 
+ * return a HTTP response feature said error and its status code, otherwise use the status code 500.
+ * @param err Caught error.
+ * @param req Incoming request.
+ * @param res Response for the incoming request.
+ * @param next Next function.
+ * @returns 
+ */
 export const errorHandler = (
     err: Error | AppError,
     req: Request,
