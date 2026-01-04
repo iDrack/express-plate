@@ -2,10 +2,10 @@ import type { NextFunction, Request, Response } from "express";
 import { logger } from "../config/logger.js";
 
 /**
- * Log HTTP requests and its result if the minLevel of the logger is set to 1 or higher
- * @param req HTTP request
- * @param res HTTP response
- * @param next Next function
+ * Log HTTP requests and its result if the minLevel of the logger is set to 1 or higher.
+ * @param req Incoming request.
+ * @param res Response for the incoming request.
+ * @param next Next function.
  */
 export const httpLogger = (req: Request, res: Response, next: NextFunction) => {
     const startTime = Date.now();

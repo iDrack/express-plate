@@ -20,13 +20,13 @@ const options: swaggerJsdoc.Options = {
                     type: "http",
                     scheme: "Bearer",
                     bearerFormat: "JWT",
-                    description: "Entrez votre token JWT,"
+                    description: "JWT access token,"
                 },
                 cookieAuth: {
                     type: "apiKey",
                     in: "cookie",
                     name: "refreshToken",
-                    description: "Cookie de refresh token"
+                    description: "Refresh token cookie"
                 },
             },
         },

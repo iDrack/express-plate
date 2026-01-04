@@ -16,7 +16,7 @@ const passwordRegex = /^.*(?=.{8,})(?=.*[a-zA-Z])(?=.*\d)(?=.*[!#$%&? "]).*$/;
  * @param name Username of the user trying to log in.
  * @param email Email of the user trying to log in.
  * @param password Password of the user trying to log in.
- * @returns
+ * @returns Promise containing the user.
  */
 const testCredentials = async (
     name: string,
@@ -44,7 +44,7 @@ const testCredentials = async (
 /**
  * Generate an accessToken and a refreshToken for a specified User.
  * @param user User to generate tokens for.
- * @returns
+ * @returns Object with both access and refresh token.
  */
 const login = (
     user: User
@@ -98,6 +98,11 @@ const prepareTokens = async (res: Response, status: number, user: User) => {
     });
 };
 
+/**
+ * Return an User based on its ID.
+ * @param userId ID of requested user.
+ * @returns Found user.
+ */
 export const getUserById = async (userId: number): Promise<User> => {
     const user = await userRepository.findOne({
         where: { id: userId },
@@ -108,6 +113,11 @@ export const getUserById = async (userId: number): Promise<User> => {
     return user;
 };
 
+/**
+ * Verify if a user ID correspond to a user saved in the database.
+ * @param userId ID of requested user.
+ * @returns True if user exist, false otherwise.
+ */
 export const checkUserExist = async (userId: number): Promise<boolean> => {
     try {
         const user = await userRepository.findOne({
@@ -120,6 +130,11 @@ export const checkUserExist = async (userId: number): Promise<boolean> => {
     }
 };
 
+/**
+ * Find an user based on its username.
+ * @param name Name of the user.
+ * @returns User found by the username.
+ */
 export const getUserByName = async (name: string) => {
     const user = await userRepository.findOne({
         where: { name: name },
@@ -130,6 +145,11 @@ export const getUserByName = async (name: string) => {
     return user;
 };
 
+/**
+ * Find an user based on its email address.
+ * @param email email of the user.
+ * @returns User found by the email address.
+ */
 export const getUserByEmail = async (email: string) => {
     const user = await userRepository.findOne({
         where: { email: email },
@@ -140,6 +160,12 @@ export const getUserByEmail = async (email: string) => {
     return user;
 };
 
+/**
+ * Create a new user then proceed to log in the newly created user.
+ * @param req Incoming HTTP request.
+ * @param res Response or the incoming HTTP request.
+ * @param next Following function.
+ */
 export const createUser = async (
     req: Request,
     res: Response,
@@ -183,6 +209,12 @@ export const createUser = async (
     }
 };
 
+/**
+ * Log a user by using its username or email and its password.
+ * @param req Incoming HTTP request.
+ * @param res Response or the incoming HTTP request.
+ * @param next Following function.
+ */
 export const loginUser = async (
     req: Request,
     res: Response,
@@ -200,6 +232,12 @@ export const loginUser = async (
     }
 };
 
+/**
+ * LOgout the user by clearing its refresh token from its cookies.
+ * @param req Incoming HTTP request.
+ * @param res Response or the incoming HTTP request.
+ * @param next Following function.
+ */
 export const logoutUser = async (
     req: Request,
     res: Response,
@@ -217,6 +255,12 @@ export const logoutUser = async (
     }
 };
 
+/**
+ * Refresh access token by using the provided refresh token stored inside the user's cookies.
+ * @param req Incoming HTTP request.
+ * @param res Response or the incoming HTTP request.
+ * @param next Following function.
+ */
 export const refreshToken = async (
     req: Request,
     res: Response,
@@ -247,6 +291,12 @@ export const refreshToken = async (
     }
 };
 
+/**
+ * Get user profile informations.
+ * @param req Incoming HTTP request.
+ * @param res Response or the incoming HTTP request.
+ * @param next Following function.
+ */
 export const getProfile = async (
     req: Request,
     res: Response,
@@ -278,6 +328,12 @@ export const getProfile = async (
     }
 };
 
+/**
+ * Return a list of all users.
+ * @param req Incoming HTTP request.
+ * @param res Response or the incoming HTTP request.
+ * @param next Following function.
+ */
 export const getAllUser = async (
     req: Request,
     res: Response,
@@ -293,6 +349,12 @@ export const getAllUser = async (
     }
 };
 
+/**
+ * Return a user using the provided user id.
+ * @param req Incoming HTTP request.
+ * @param res Response or the incoming HTTP request.
+ * @param next Following function.
+ */
 export const getUser = async (
     req: Request,
     res: Response,
@@ -316,6 +378,12 @@ export const getUser = async (
     }
 };
 
+/**
+ * Update user informations.
+ * @param req Incoming HTTP request.
+ * @param res Response or the incoming HTTP request.
+ * @param next Following function.
+ */
 export const updateUser = async (
     req: Request,
     res: Response,
@@ -346,6 +414,12 @@ export const updateUser = async (
     }
 };
 
+/**
+ * Update user password. The provided password is hashed before being stored inside the database.
+ * @param req Incoming HTTP request.
+ * @param res Response or the incoming HTTP request.
+ * @param next Following function.
+ */
 export const updatePassword = async (
     req: Request,
     res: Response,
@@ -387,6 +461,13 @@ export const updatePassword = async (
     }
 };
 
+/**
+ * Delete the currently logged in user from the database before disconnecting the user.
+ * The user need to specify its password to ensure its identity.
+ * @param req Incoming HTTP request.
+ * @param res Response or the incoming HTTP request.
+ * @param next Following function.
+ */
 export const deleteUser = async (
     req: Request,
     res: Response,
@@ -420,6 +501,12 @@ export const deleteUser = async (
     }
 };
 
+/**
+ * Delete a user be using the provided user id.
+ * @param req Incoming HTTP request.
+ * @param res Response or the incoming HTTP request.
+ * @param next Following function.
+ */
 export const deleteUserById = async (
     req: Request,
     res: Response,
