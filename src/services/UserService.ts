@@ -80,7 +80,7 @@ const prepareTokens = async (res: Response, status: number, user: User) => {
 
     res.cookie("refreshToken", refreshToken, {
         httpOnly: true,
-        secure: process.env.MODE_ENV === "production",
+        secure: process.env.NODE_ENV === "production",
         sameSite: "strict",
         maxAge: 30 * 24 * 60 * 60 * 1000, //30 days
         path: "/users/refresh",
@@ -262,7 +262,7 @@ export const getProfile = async (
 
         const user = await userRepository.findOne({
             where: { id: req.user.id },
-            select: ["id", "name", "email"],
+            select: ["id", "name", "email", "role"],
         });
 
         if (!user) {

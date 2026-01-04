@@ -36,7 +36,7 @@ export class JwtService {
         try {
             return jwt.verify(token, this.SECRET) as JwtPayload;
         } catch (error) {
-            throw new AppError("Invalid or expired token.", 500);
+            throw new AppError("Invalid or expired token.", 401);
         }
     }
 
@@ -44,7 +44,7 @@ export class JwtService {
         try {
             return jwt.verify(token, this.REFRESH_SECRET) as JwtPayload;
         } catch (error) {
-            throw new AppError("Invalid or expired refresh token", 500);
+            throw new AppError("Invalid or expired refresh token", 401);
         }
     }
 }
