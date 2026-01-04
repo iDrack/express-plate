@@ -1,13 +1,14 @@
-import "reflect-metadata";
 import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
 import express from "express";
+import "reflect-metadata";
 import swaggerUi from "swagger-ui-express";
 import { AppDataSource } from "./config/database.js";
-import { errorHandler } from "./middlewares/errorHandler.js";
-import UserRoutes from "./routes/UserRoutes.js";
+import { logger } from "./config/logger.js";
 import { swaggerSpec } from "./config/swagger.js";
-import { httpLogger, logger } from "./config/logger.js";
+import { errorHandler } from "./middlewares/errorHandler.js";
+import { httpLogger } from "./middlewares/httpLogger.js";
+import UserRoutes from "./routes/UserRoutes.js";
 
 const app = express();
 const port = process.env.PORT;

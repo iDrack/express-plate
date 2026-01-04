@@ -1,5 +1,6 @@
-import type { NextFunction, Request, Response } from "express";
 import { Logger } from "tslog";
+import * as fs from "fs";
+import * as path from "path";
 
 export const logger = new Logger({
     name: "Log_1",
@@ -17,36 +18,28 @@ export const logger = new Logger({
     hideLogPositionForProduction: process.env.NODE_ENV === "production",
 });
 
-/**
- * Log HTTP requests and its result if the minLevel of the logger is set to 1 or higher
- * @param req HTTP request
- * @param res HTTP response
- * @param next Next function
- */
-export const httpLogger = (req: Request, res: Response, next: NextFunction) => {
-    const startTime = Date.now();
-
-    logger.info(`→ ${req.method} ${req.originalUrl}`, {
-        ip: req.ip,
-        userAgent: req.get('user-agent'),
-        userID: req.user?.id || 'anonymous'
-    });
-
-    const originalSend = res.send;
-    res.send = function(data: any) {
-        const duration = Date.now() - startTime;
-
-        const logMethod = res.statusCode >= 400 ? 'error' : 'info';
-
-        logger[logMethod](`← ${req.method} ${req.originalUrl} ${res.statusCode}`, {
-            duration: `${duration}ms`,
-            statusCode: res.statusCode,
-            userId : req.user?.id || 'anonymous'
-        });
-
-        return originalSend.call(this, data);
+//Log entries sorted by day, format: app-YYYY-MM-DD.log
+if (process.env.LOG_PERSIST === 'true') {
+    const logDir = path.join(process.cwd(), "logs");
+    if (!fs.existsSync(logDir)) {
+        fs.mkdirSync(logDir, { recursive: true});
     }
-    next();
+    
+    const logStream = fs.createWriteStream(
+        path.join(logDir, `app-${new Date().toISOString().split('T')[0]}.log`),
+        { flags: "a" }
+    );
+    
+    const errorStream = fs.createWriteStream(
+        path.join(logDir, `error-${new Date().toISOString().split('T')[0]}.log`),
+        {flags: 'a'}
+    );
+    
+    logger.attachTransport((logObj) => {
+        logStream.write(JSON.stringify(logObj) + "\n");
+    
+        if(logObj._meta?.logLevelId !== undefined && logObj._meta?.logLevelId >= 4) {
+            errorStream.write(JSON.stringify(logObj) + "\n")
+        }
+    });
 }
-
-//TODO: Trouver un moyen d'enregistrer les logs, aussi paramétrable
