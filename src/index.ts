@@ -9,6 +9,7 @@ import { swaggerSpec } from "./config/swagger.js";
 import { errorHandler } from "./middlewares/errorHandler.js";
 import { httpLogger } from "./middlewares/httpLogger.js";
 import UserRoutes from "./routes/UserRoutes.js";
+import HealthRoutes from "./modules/health/health.routes.js";
 
 const app = express();
 const port = process.env.PORT;
@@ -31,6 +32,7 @@ if (logger.settings.minLevel <= 1) {
 
 //Routes
 app.use("/users", UserRoutes);
+app.use("/health", HealthRoutes);
 
 //Errors handling
 app.use(errorHandler);
