@@ -13,6 +13,7 @@ Ready to use node boiler plate using Typescript and TypeORM with user and roles 
 ```text
 PORT=
 NODE_ENV=
+APP_VERSION=
 
 LOG_LEVEL=[0 - 6]
 LOG_PERSIST=[true - false]

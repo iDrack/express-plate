@@ -4,9 +4,9 @@ const options: swaggerJsdoc.Options = {
     definition: {
         openapi: "3.0.0",
         info: {
-            title: "TodoList API",
+            title: "API",
             version: "1.0.0",
-            description: "API de gestion de tâches",
+            description: "API",
         },
         servers: [
             {
@@ -36,7 +36,7 @@ const options: swaggerJsdoc.Options = {
             },
         ],
     },
-    apis: ["./src/routes/*.ts", "./src/models/*.ts"],
+    apis: ["./src/routes/*.ts", "./src/modules/*/*.routes.ts", "./src/models/*.ts"],
 };
 
 export const swaggerSpec = swaggerJsdoc(options);
