@@ -10,7 +10,7 @@ import { logger } from "../config/logger.js";
 export const httpLogger = (req: Request, res: Response, next: NextFunction) => {
     const startTime = Date.now();
 
-    logger.info(`→ ${req.method} ${req.originalUrl}`, {
+    logger.info(`← ${req.method} ${req.originalUrl}`, {
         ip: req.ip,
         userAgent: req.get("user-agent"),
         userID: req.user?.id || "anonymous",
@@ -23,7 +23,7 @@ export const httpLogger = (req: Request, res: Response, next: NextFunction) => {
         const logMethod = res.statusCode >= 400 ? "error" : "info";
 
         logger[logMethod](
-            `← ${req.method} ${req.originalUrl} ${res.statusCode}`, {
+            `→ ${req.method} ${req.originalUrl} ${res.statusCode}`, {
                 duration: `${duration}ms`,
                 statusCode: res.statusCode,
                 userID: req.user?.id || "anonymous",

@@ -4,7 +4,6 @@ import { AppDataSource } from "../../config/database.js";
 import {
     HealthStatus,
     type DependencyCheck,
-    type HealthCheckResponse,
 } from "./health.types.js";
 
 export class HealthService {
@@ -110,10 +109,4 @@ export class HealthService {
             return HealthStatus.DEGRADED;
         return HealthStatus.HEALTHY;
     }
-
-    async detailedHealthCheck(
-        req: Request,
-        res: Response,
-        next: NextFunction
-    ) {}
 }

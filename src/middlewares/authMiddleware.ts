@@ -1,7 +1,7 @@
 import type { Request, Response, NextFunction } from "express";
-import { JwtService } from "../services/JwtService.js";
 import { AppError } from "./errorHandler.js";
-import { checkUserExist } from "../services/UserService.js";
+import { JwtService } from "../modules/core/jwt.service.js";
+import { UserService } from "../modules/user/user.service.js";
 
 declare global {
     namespace Express {
@@ -15,6 +15,8 @@ declare global {
     }
 }
 
+const userService = new UserService();
+
 export interface AuthRequest extends Request {
     user: { id: number; name: string; role: string };
 }
@@ -27,7 +29,7 @@ export interface AuthRequest extends Request {
  * @param res Response for the incoming request.
  * @param next Function to execute after this one.
  */
-export const authenticate = (
+export const authenticate = async(
     req: Request,
     res: Response,
     next: NextFunction
@@ -41,7 +43,7 @@ export const authenticate = (
         const token = authHeader.split(" ")[1];
         const decoded = JwtService.verifyAccessToken(token as string);       
 
-        if (!checkUserExist(decoded.id))
+        if (!(await userService.checkUserExist(decoded.id)))
             throw new AppError("User no longer exists.", 401);
 
         req.user = {
@@ -49,6 +51,7 @@ export const authenticate = (
             name: decoded.name,
             role: decoded.role,
         };
+        
         next();
     } catch (error) {
         next(error);
@@ -61,9 +64,6 @@ export const authenticate = (
  * @returns NextFunction or AppError.
  */
 export const authorize = (allowedRoles: string[]) => {
-    allowedRoles.forEach((role) => {
-        role = role.toLowerCase();
-    });
     return (req: AuthRequest, res: Response, next: NextFunction) => {
         if (!req.user) {
             next(

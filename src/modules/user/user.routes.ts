@@ -1,26 +1,15 @@
 import { Router } from "express";
-import {
-    createUser,
-    deleteUser,
-    deleteUserById,
-    getAllUser,
-    getProfile,
-    getUser,
-    loginUser,
-    logoutUser,
-    refreshToken,
-    updatePassword,
-    updateUser,
-} from "../services/UserService.js";
-import { authenticate, authorize } from "../middlewares/authMiddleware.js";
+import { authenticate, authorize } from "../../middlewares/authMiddleware.js";
 import {
     apiLimiter,
     loginLimiter,
     refreshLimiter,
     registerLimiter,
-} from "../middlewares/rateLimiter.js";
+} from "../../middlewares/rateLimiter.js";
+import { UserController } from "./user.controller.js";
 
 const router = Router();
+const controller = new UserController();
 
 router.use(apiLimiter);
 
@@ -131,10 +120,10 @@ router.use(apiLimiter);
  *     PasswordUpdate:
  *       type: object
  *       required:
- *         - password
+ *         - oldPassword
  *         - newPassword
  *       properties:
- *         password:
+ *         oldPassword:
  *           type: string
  *           description: Current password
  *         newPassword:
@@ -143,7 +132,7 @@ router.use(apiLimiter);
  *           pattern: '^.*(?=.{8,})(?=.*[a-zA-Z])(?=.*\\d)(?=.*[!#$%&? "]).*$'
  *           description: New password (8 characters minimum, must contain letters, numbers and special characters)
  *       example:
- *         password: "Test1234!"
+ *         oldPassword: "Test1234!"
  *         newPassword: "P@ssword1234"
  *     AuthResponse:
  *       type: object
@@ -226,7 +215,7 @@ router.use(apiLimiter);
  *       429:
  *         description: Too many attempts
  */
-router.post("/register", registerLimiter, createUser);
+router.post("/register", registerLimiter, controller.createUser);
 
 /**
  * @swagger
@@ -261,7 +250,7 @@ router.post("/register", registerLimiter, createUser);
  *       429:
  *         description: Too many attempts
  */
-router.post("/login", loginLimiter, loginUser);
+router.post("/login", loginLimiter, controller.loginUser);
 
 /**
  * @swagger
@@ -291,7 +280,7 @@ router.post("/login", loginLimiter, loginUser);
  *       429:
  *         description: Too many attempts
  */
-router.post("/refresh", refreshLimiter, refreshToken);
+router.post("/refresh", refreshLimiter, controller.refreshToken);
 
 /**
  * @swagger
@@ -319,7 +308,7 @@ router.post("/refresh", refreshLimiter, refreshToken);
  *               type: string
  *               example: jwt=; Max-Age=0
  */
-router.post("/logout", logoutUser);
+router.post("/logout", controller.logoutUser);
 
 /**
  * @swagger
@@ -364,7 +353,7 @@ router.post("/logout", logoutUser);
  *       403:
  *         description: Access denied
  */
-router.get("/", authenticate, authorize(["Admin"]), getAllUser);
+router.get("/", authenticate, authorize(["admin"]), controller.getAllUser);
 
 /**
  * @swagger
@@ -400,7 +389,7 @@ router.get("/", authenticate, authorize(["Admin"]), getAllUser);
  *       401:
  *         description: Not logged in
  */
-router.get("/profile", authenticate, getProfile);
+router.get("/profile", authenticate, controller.getProfile);
 
 /**
  * @swagger
@@ -442,7 +431,7 @@ router.get("/profile", authenticate, getProfile);
  *       404:
  *         description: User not found
  */
-router.get("/:id", authenticate, authorize(["Admin"]), getUser);
+router.get("/:id", authenticate, authorize(["admin"]), controller.getUser);
 
 /**
  * @swagger
@@ -477,7 +466,7 @@ router.get("/:id", authenticate, authorize(["Admin"]), getUser);
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.put("/", authenticate, updateUser);
+router.put("/", authenticate, controller.updateUser);
 
 /**
  * @swagger
@@ -518,7 +507,7 @@ router.put("/", authenticate, updateUser);
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.put("/passwordChange", authenticate, updatePassword);
+router.put("/passwordChange", authenticate, controller.updatePassword);
 
 /**
  * @swagger
@@ -565,7 +554,7 @@ router.put("/passwordChange", authenticate, updatePassword);
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.delete("/", authenticate, deleteUser);
+router.delete("/", authenticate, controller.deleteUser);
 
 /**
  * @swagger
@@ -615,6 +604,6 @@ router.delete("/", authenticate, deleteUser);
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.delete("/:id", authenticate, authorize(["ADMIN"]), deleteUserById);
+router.delete("/:id", authenticate, authorize(["admin"]), controller.deleteUserById);
 
 export default router;

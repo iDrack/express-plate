@@ -4,7 +4,7 @@ import {
     type DetailedHealthCheckResponse,
     type ReadinessCheckResponse,
 } from "./health.types.js";
-import { HealthService } from "./heath.service.js";
+import { HealthService } from "./health.service.js";
 
 export class HealthController {
     private service: HealthService;
