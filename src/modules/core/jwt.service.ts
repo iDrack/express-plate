@@ -1,5 +1,5 @@
 import jwt from "jsonwebtoken";
-import { AppError } from "../middlewares/errorHandler.js";
+import { AppError } from "../../middlewares/errorHandler.js";
 
 interface JwtPayload {
     id: number;
