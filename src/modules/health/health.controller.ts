@@ -4,13 +4,11 @@ import {
     type DetailedHealthCheckResponse,
     type ReadinessCheckResponse,
 } from "./health.types.js";
-import { HealthService } from "./health.service.js";
+import { healthService } from "./health.service.js";
 
 export class HealthController {
-    private service: HealthService;
 
     constructor() {
-        this.service = new HealthService();
         this.ping = this.ping.bind(this);
         this.isAlive = this.isAlive.bind(this);
         this.isReady = this.isReady.bind(this);
@@ -24,7 +22,7 @@ export class HealthController {
      */
     async ping(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
-            const uptime = this.service.getUptime();
+            const uptime = healthService.getUptime();
             res.status(200).json({
                 status: HealthStatus.HEALTHY,
                 timestamp: new Date().toISOString(),
@@ -62,7 +60,7 @@ export class HealthController {
         next: NextFunction
     ): Promise<void> {
         try {
-            const dbCheck = await this.service.checkDatabase();
+            const dbCheck = await healthService.checkDatabase();
             const isDBReady = dbCheck.status === HealthStatus.HEALTHY;
 
             const response: ReadinessCheckResponse = {
@@ -94,8 +92,8 @@ export class HealthController {
     ): Promise<void> {
         try {
             const [dbCheck, memoryCheck] = await Promise.all([
-                this.service.checkDatabase(),
-                Promise.resolve(this.service.checkMemory()),
+                healthService.checkDatabase(),
+                Promise.resolve(healthService.checkMemory()),
             ]);
 
             const checks = {
@@ -103,12 +101,12 @@ export class HealthController {
                 memory: memoryCheck,
             };
 
-            const overallStatus = this.service.checkGlobalStatus(checks);
+            const overallStatus = healthService.checkGlobalStatus(checks);
 
             const response: DetailedHealthCheckResponse = {
                 status: overallStatus,
                 timestamp: new Date().toISOString(),
-                uptime: this.service.getUptime(),
+                uptime: healthService.getUptime(),
                 checks,
                 version: process.env.APP_VERSION || "1.0.0",
                 environment: process.env.NODE_ENV || "development",

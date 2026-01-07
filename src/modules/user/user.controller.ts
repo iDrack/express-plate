@@ -1,15 +1,13 @@
 import { AppError } from "../../middlewares/errorHandler.js";
 import type { User } from "../../models/User.js";
 import { JwtService } from "../core/jwt.service.js";
-import { UserService } from "./user.service.js";
+import { userService } from "./user.service.js";
 import type { Request, Response, NextFunction } from "express";
 import type { UserProfile } from "./user.types.js";
 
 export class UserController {
-    private userService: UserService;
 
     constructor() {
-        this.userService = new UserService();
         this.createUser = this.createUser.bind(this);
         this.loginUser = this.loginUser.bind(this);
         this.logoutUser = this.logoutUser.bind(this);
@@ -30,7 +28,7 @@ export class UserController {
      * @param user User getting logged in.
      */
     async prepareTokens(res: Response, status: number, user: User) {
-        const { accessToken, refreshToken } = this.userService.login(user);
+        const { accessToken, refreshToken } = userService.login(user);
 
         res.cookie("refreshToken", refreshToken, {
             httpOnly: true,
@@ -73,7 +71,7 @@ export class UserController {
             }
 
             try {
-                if (await this.userService.getUserByEmail(email)) {
+                if (await userService.getUserByEmail(email)) {
                     throw new AppError(
                         `E-mail :${email} is already in use, please try a different one.`,
                         409
@@ -86,7 +84,7 @@ export class UserController {
             }
 
             try {
-                if (await this.userService.getUserByName(name)) {
+                if (await userService.getUserByName(name)) {
                     throw new AppError(
                         `Username :${email} is already in use, please try a different one.`,
                         409
@@ -97,7 +95,7 @@ export class UserController {
                     throw error;
                 }
             }
-            const user = await this.userService.createUser(
+            const user = await userService.createUser(
                 name,
                 email,
                 password
@@ -124,7 +122,7 @@ export class UserController {
             if (!password || (!name && !email)) {
                 throw new AppError("Invalid credentials.", 400);
             }
-            const user = await this.userService.testCredentials(
+            const user = await userService.testCredentials(
                 name,
                 email,
                 password
@@ -212,7 +210,7 @@ export class UserController {
                 );
             }
 
-            const user: User = await this.userService.getUserById(req.user.id);
+            const user: User = await userService.getUserById(req.user.id);
 
             if (!user) {
                 throw new AppError("User not found.", 404);
@@ -246,7 +244,7 @@ export class UserController {
         next: NextFunction
     ): Promise<void> {
         try {
-            const users = await this.userService.getAllUsers();
+            const users = await userService.getAllUsers();
             if (users) {
                 res.json({ status: "success", data: users });
             }
@@ -271,7 +269,7 @@ export class UserController {
             if (req.params.id === undefined) {
                 throw new AppError("Missing userId.", 404);
             } else {
-                const user = await this.userService.getUserById(
+                const user = await userService.getUserById(
                     parseInt(req.params.id)
                 );
                 if (!user) {
@@ -310,7 +308,7 @@ export class UserController {
                 );
             }
             const { email, name, role } = req.body;
-            const user = await this.userService.updateUser(req.user.id, {
+            const user = await userService.updateUser(req.user.id, {
                 name: name,
                 email: email,
                 role: role,
@@ -342,7 +340,7 @@ export class UserController {
             }
 
             const { oldPassword, newPassword } = req.body;
-            const user = await this.userService.updatePassword(
+            const user = await userService.updatePassword(
                 req.user.id,
                 oldPassword,
                 newPassword
@@ -375,7 +373,7 @@ export class UserController {
                 );
             }
             const { password } = req.body;
-            if (await this.userService.deleteUser(req.user.id, password)) {
+            if (await userService.deleteUser(req.user.id, password)) {
                 res.clearCookie("refreshToken", { path: "/users/refresh" });
 
                 res.status(200).json({
@@ -409,7 +407,7 @@ export class UserController {
             if (userId === undefined) {
                 throw new AppError("Missing userId", 404);
             }
-            this.userService.deleteUserById(parseInt(userId));
+            userService.deleteUserById(parseInt(userId));
             res.status(200).json({
                 status: "success",
                 message: `User: ${userId} has been deleted successfully.`,

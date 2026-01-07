@@ -7,9 +7,18 @@ import { JwtService } from "../core/jwt.service.js";
 import type { TokensResponse } from "./user.types.js";
 import { logger } from "../../config/logger.js";
 import { toRole } from "../../models/Role.js";
-export class UserService {
+
+class UserService {
     private userRepository: Repository<User>;
     private passwordRegex: RegExp;
+    private static instance: UserService;
+
+    static getInstance() {
+        if(!UserService.instance) {
+            UserService.instance = new UserService()
+        }
+        return UserService.instance;
+    }
 
     constructor() {
         this.userRepository = AppDataSource.getRepository(User);
@@ -252,3 +261,5 @@ export class UserService {
         }
     }
 }
+
+export const userService = UserService.getInstance();
