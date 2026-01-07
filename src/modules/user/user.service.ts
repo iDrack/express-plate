@@ -6,17 +6,15 @@ import bcrypt from "bcrypt";
 import { JwtService } from "../core/jwt.service.js";
 import type { TokensResponse } from "./user.types.js";
 import { logger } from "../../config/logger.js";
-import { isRole, toRole } from "../../models/Role.js";
+import { toRole } from "../../models/Role.js";
 export class UserService {
     private userRepository: Repository<User>;
-    private jwtService: JwtService;
     private passwordRegex: RegExp;
 
     constructor() {
         this.userRepository = AppDataSource.getRepository(User);
-        this.jwtService = new JwtService();
         this.passwordRegex =
-            /^.*(?=.{8,})(?=.*[a-zA-Z])(?=.*\d)(?=.*[!#$%&? "]).*$/;
+            /^.*(?=.{8,})(?=.*[a-zA-Z])(?=.*\d)(?=.*[!@#$%&? "]).*$/;
     }
 
     /**
@@ -145,13 +143,13 @@ export class UserService {
             throw new AppError("Invalid password format.", 400);
         }
 
-        const hash = await bcrypt.hash(password, 3);
+        const hash = await bcrypt.hash(password, 10);
         const user = this.userRepository.create({
             name: name,
             email: email,
             password: hash,
         });
-        return this.userRepository.save(user);
+        return await this.userRepository.save(user);
     }
 
     /**
@@ -216,7 +214,7 @@ export class UserService {
             throw new AppError("Invalid password format.", 400);
         }
 
-        const hash = await bcrypt.hash(newPassword, 3);
+        const hash = await bcrypt.hash(newPassword, 10);
 
         userToUpdate.password = hash;
 
@@ -230,7 +228,7 @@ export class UserService {
      */
     async deleteUserById(id: number): Promise<boolean> {
         const userToDelete = await this.getUserById(id);
-        this.userRepository.delete(userToDelete);
+        this.userRepository.delete(userToDelete.id);
         return true;
     }
 
@@ -242,8 +240,9 @@ export class UserService {
      */
     async deleteUser(id: number, password: string): Promise<boolean> {
         const userToDelete = await this.getUserById(id);
+
         if (await bcrypt.compare(password, userToDelete.password)) {
-            this.userRepository.delete(userToDelete);
+            await this.userRepository.delete(userToDelete.id);
             return true;
         } else {
             throw new AppError(

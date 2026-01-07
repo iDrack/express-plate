@@ -10,6 +10,17 @@ export class UserController {
 
     constructor() {
         this.userService = new UserService();
+        this.createUser = this.createUser.bind(this);
+        this.loginUser = this.loginUser.bind(this);
+        this.logoutUser = this.logoutUser.bind(this);
+        this.refreshToken = this.refreshToken.bind(this);
+        this.getProfile = this.getProfile.bind(this);
+        this.getAllUser = this.getAllUser.bind(this);
+        this.getUser = this.getUser.bind(this);
+        this.updateUser = this.updateUser.bind(this);
+        this.updatePassword = this.updatePassword.bind(this);
+        this.deleteUser = this.deleteUser.bind(this);
+        this.deleteUserById = this.deleteUserById.bind(this);
     }
 
     /**
@@ -60,25 +71,37 @@ export class UserController {
                     400
                 );
             }
-            if (await this.userService.getUserByEmail(email)) {
-                throw new AppError(
-                    `E-mail :${email} is already in use, please try a different one.`,
-                    409
-                );
-            }
-            if (await this.userService.getUserByName(name)) {
-                throw new AppError(
-                    `Username :${email} is already in use, please try a different one.`,
-                    409
-                );
+
+            try {
+                if (await this.userService.getUserByEmail(email)) {
+                    throw new AppError(
+                        `E-mail :${email} is already in use, please try a different one.`,
+                        409
+                    );
+                }
+            } catch (error) {
+                if (error instanceof AppError && error.statusCode !== 404) {
+                    throw error;
+                }
             }
 
+            try {
+                if (await this.userService.getUserByName(name)) {
+                    throw new AppError(
+                        `Username :${email} is already in use, please try a different one.`,
+                        409
+                    );
+                }
+            } catch (error) {
+                if (error instanceof AppError && error.statusCode !== 404) {
+                    throw error;
+                }
+            }
             const user = await this.userService.createUser(
                 name,
                 email,
                 password
             );
-
             await this.prepareTokens(res, 201, user);
         } catch (error) {
             next(error);
