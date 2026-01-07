@@ -6,11 +6,20 @@ import {
     type DependencyCheck,
 } from "./health.types.js";
 
-export class HealthService {
+class HealthService {
+
+    private static instance: HealthService
     private startTime: number;
     private dataSource: DataSource;
 
-    constructor() {
+    static getInstance(): HealthService{
+        if(!HealthService.instance) {
+            HealthService.instance = new HealthService();
+        }
+        return HealthService.instance;
+    }
+
+    private constructor() {
         this.startTime = Date.now();
         this.dataSource = AppDataSource;
     }
@@ -110,3 +119,5 @@ export class HealthService {
         return HealthStatus.HEALTHY;
     }
 }
+
+export const healthService = HealthService.getInstance();

@@ -1,7 +1,7 @@
 import type { Request, Response, NextFunction } from "express";
 import { AppError } from "./errorHandler.js";
 import { JwtService } from "../modules/core/jwt.service.js";
-import { UserService } from "../modules/user/user.service.js";
+import { userService } from "../modules/user/user.service.js";
 
 declare global {
     namespace Express {
@@ -14,8 +14,6 @@ declare global {
         }
     }
 }
-
-const userService = new UserService();
 
 export interface AuthRequest extends Request {
     user: { id: number; name: string; role: string };
