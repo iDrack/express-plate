@@ -7,7 +7,7 @@
     "build": "npx tsc",
     "dev": "nodemon",
     "docker-compose-up": "docker compose up -d",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "jest"
   },
   "keywords": [],
   "author": "",
@@ -24,6 +24,7 @@
     "@types/node": "^24.10.1",
     "@types/swagger-jsdoc": "^6.0.4",
     "@types/swagger-ui-express": "^4.1.8",
+    "jest": "^30.2.0",
     "nodemon": "^3.1.11",
     "ts-node": "^10.9.2",
     "tsx": "^4.21.0",
