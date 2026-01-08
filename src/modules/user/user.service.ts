@@ -1,12 +1,12 @@
 import type { Repository } from "typeorm";
 import { AppDataSource } from "../../config/database.js";
-import { User } from "../../models/User.js";
+import { User } from "../../models/user.js";
 import { AppError } from "../../middlewares/errorHandler.js";
 import bcrypt from "bcrypt";
 import { JwtService } from "../core/jwt.service.js";
 import type { TokensResponse } from "./user.types.js";
 import { logger } from "../../config/logger.js";
-import { toRole } from "../../models/Role.js";
+import { toRole } from "../../models/role.js";
 
 class UserService {
     private userRepository: Repository<User>;
@@ -14,8 +14,8 @@ class UserService {
     private static instance: UserService;
 
     static getInstance() {
-        if(!UserService.instance) {
-            UserService.instance = new UserService()
+        if (!UserService.instance) {
+            UserService.instance = new UserService();
         }
         return UserService.instance;
     }

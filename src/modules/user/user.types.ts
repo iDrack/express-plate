@@ -1,4 +1,4 @@
-import type { Role } from "../../models/Role.js";
+import type { Role } from "../../models/role.js";
 
 export interface TokensResponse {
     accessToken: string;
@@ -6,8 +6,8 @@ export interface TokensResponse {
 }
 
 export interface UserProfile {
-    id: number,
-    name: string,
-    email: string,
-    role: Role
+    id: number;
+    name: string;
+    email: string;
+    role: Role;
 }

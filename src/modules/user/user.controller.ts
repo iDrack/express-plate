@@ -1,12 +1,11 @@
 import { AppError } from "../../middlewares/errorHandler.js";
-import type { User } from "../../models/User.js";
+import type { User } from "../../models/user.js";
 import { JwtService } from "../core/jwt.service.js";
 import { userService } from "./user.service.js";
 import type { Request, Response, NextFunction } from "express";
 import type { UserProfile } from "./user.types.js";
 
 export class UserController {
-
     constructor() {
         this.createUser = this.createUser.bind(this);
         this.loginUser = this.loginUser.bind(this);
@@ -95,11 +94,7 @@ export class UserController {
                     throw error;
                 }
             }
-            const user = await userService.createUser(
-                name,
-                email,
-                password
-            );
+            const user = await userService.createUser(name, email, password);
             await this.prepareTokens(res, 201, user);
         } catch (error) {
             next(error);
