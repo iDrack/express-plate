@@ -1,19 +1,14 @@
-import type { NextFunction, Request, Response } from "express";
 import type { DataSource } from "typeorm";
 import { AppDataSource } from "../../config/database.js";
-import {
-    HealthStatus,
-    type DependencyCheck,
-} from "./health.types.js";
+import { HealthStatus, type DependencyCheck } from "./health.types.js";
 
 class HealthService {
-
-    private static instance: HealthService
+    private static instance: HealthService;
     private startTime: number;
     private dataSource: DataSource;
 
-    static getInstance(): HealthService{
-        if(!HealthService.instance) {
+    static getInstance(): HealthService {
+        if (!HealthService.instance) {
             HealthService.instance = new HealthService();
         }
         return HealthService.instance;
@@ -82,7 +77,7 @@ class HealthService {
         const used = process.memoryUsage();
         const heapUsedMB = Math.round(used.heapUsed / 1024 / 1024);
         const heapTotalMB = Math.round(used.heapTotal / 1024 / 1024);
-        const percentUsed = heapUsedMB / heapTotalMB / 100;
+        const percentUsed = (heapUsedMB / heapTotalMB) * 100;
 
         let status = HealthStatus.HEALTHY;
         let message = `${heapUsedMB}MB / ${heapTotalMB}MB (${percentUsed.toFixed(
@@ -96,7 +91,7 @@ class HealthService {
             status = HealthStatus.UNHEALTHY;
             message += " - Critical memory usage";
         }
-
+        
         return {
             status,
             responseTime: 0,
