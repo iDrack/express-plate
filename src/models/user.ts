@@ -6,7 +6,7 @@ import {
     UpdateDateColumn,
 } from "typeorm";
 import { IsEmail, Length } from "class-validator";
-import { Role } from "./role.js";
+import { Role } from "./role.js";import bcrypt from "bcrypt";
 
 @Entity()
 export class User {

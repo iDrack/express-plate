@@ -2,7 +2,6 @@ import { healthService } from "../../../../src/modules/health/health.service";
 import { AppDataSource } from "../../../../src/config/database";
 import { HealthStatus } from "../../../../src/modules/health/health.types";
 
-// Mock du DataSource
 jest.mock("../../../../src/config/database", () => ({
     AppDataSource: {
         query: jest.fn(),
