@@ -1,12 +1,12 @@
 import type { Repository } from "typeorm";
 import { AppDataSource } from "../../config/database.js";
-import { User } from "../../models/User.js";
+import { User } from "../../models/user.js";
 import { AppError } from "../../middlewares/errorHandler.js";
 import bcrypt from "bcrypt";
 import { JwtService } from "../core/jwt.service.js";
 import type { TokensResponse } from "./user.types.js";
 import { logger } from "../../config/logger.js";
-import { toRole } from "../../models/Role.js";
+import { toRole } from "../../models/role.js";
 
 class UserService {
     private userRepository: Repository<User>;
@@ -14,8 +14,8 @@ class UserService {
     private static instance: UserService;
 
     static getInstance() {
-        if(!UserService.instance) {
-            UserService.instance = new UserService()
+        if (!UserService.instance) {
+            UserService.instance = new UserService();
         }
         return UserService.instance;
     }
@@ -28,7 +28,7 @@ class UserService {
 
     /**
      * Test user credentials, an email or a username is needed to identify an user.
-     * If credentials are correct, returns the user identified by it's username or email.
+     * If credentials are correct, returns the user identified by its username or email.
      * If the test fails or the user cannot be found, throw an exception.
      * @param name Username of the user trying to log in.
      * @param email Email of the user trying to log in.
@@ -43,11 +43,13 @@ class UserService {
         let user;
         if (email) {
             user = await this.userRepository.findOne({ where: { email } });
-        } else {
+        } else if(name) {
             user = await this.userRepository.findOne({ where: { name } });
+        } else {
+            throw new AppError(`Unable to find user, provide an email or an username.`, 404);
         }
 
-        if (!user) {
+        if (!user || user === undefined) {
             throw new AppError(`Unable to find user.`, 404);
         }
 
@@ -105,8 +107,9 @@ class UserService {
         try {
             const user = await this.userRepository.findOne({
                 where: { id: userId },
-            });
-            return user !== undefined;
+            });            
+            
+            return (user !== null && user !== undefined);
         } catch (error) {
             logger.error(error);
             return false;
@@ -130,7 +133,7 @@ class UserService {
 
     /**
      * Find an user based on its email address.
-     * @param email email of the user.
+     * @param email Email of the user.
      * @returns User found by the email address.
      */
     async getUserByEmail(email: string): Promise<User> {
@@ -143,6 +146,13 @@ class UserService {
         return user;
     }
 
+    /**
+     * Create a new user.
+     * @param name Username.
+     * @param email Email for the newly created user.
+     * @param password Password.
+     * @returns Created User.
+     */
     async createUser(
         name: string,
         email: string,

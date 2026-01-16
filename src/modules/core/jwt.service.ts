@@ -20,7 +20,10 @@ export class JwtService {
      * @returns JWT access token
      */
     static generateAccessToken(payload: JwtPayload): string {
-        if (!this.SECRET) {
+        if(!payload.id || !payload.name || !payload.role) {
+            throw new AppError("Missing arguments in payload.", 500);
+        }
+        if (!this.SECRET || !this.EXPIRES_IN) {
             throw new AppError("Missing JWT secret in .env.", 500);
         }
         return jwt.sign(payload, this.SECRET, {
@@ -34,8 +37,11 @@ export class JwtService {
      * @returns JWT refresh token
      */
     static generateRefreshToken(payload: JwtPayload): string {
-        if (!this.REFRESH_SECRET) {
-            throw new AppError("Missing JWT refresh token in .env.", 500);
+        if(!payload.id || !payload.name || !payload.role) {
+            throw new AppError("Missing arguments in payload.", 500);
+        }
+        if (!this.REFRESH_SECRET || !this.REFRESH_EXPIRES_IN) {
+            throw new AppError("Missing JWT refresh secrets in .env.", 500);
         }
         return jwt.sign(payload, this.REFRESH_SECRET, {
             expiresIn: this.REFRESH_EXPIRES_IN as string,
@@ -48,6 +54,9 @@ export class JwtService {
      * @returns JWTPayload for tested access token
      */
     static verifyAccessToken(token: string): JwtPayload {
+        if(!this.SECRET) {
+            throw new AppError("Missing JWT secret in .env.", 500);
+        }
         try {
             return jwt.verify(token, this.SECRET) as JwtPayload;
         } catch (error) {
@@ -61,10 +70,13 @@ export class JwtService {
      * @returns JWTPayload for tested refresh token
      */
     static verifyRefreshToken(token: string): JwtPayload {
+        if(!this.REFRESH_SECRET) {
+            throw new AppError("Missing JWT refresh secret in .env.", 500);
+        }
         try {
             return jwt.verify(token, this.REFRESH_SECRET) as JwtPayload;
         } catch (error) {
-            throw new AppError("Invalid or expired refresh token", 401);
+            throw new AppError("Invalid or expired refresh token.", 401);
         }
     }
 }

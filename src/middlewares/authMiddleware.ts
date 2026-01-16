@@ -20,7 +20,7 @@ export interface AuthRequest extends Request {
 }
 
 /**
- * Check if the user is logged in. This is accomplished by testing an Bearer token in the request header.
+ * Check if the user is logged in. This is accomplished by testing a Bearer token in the request header.
  * After the user is logged in, the user datas are then stored inside the request under the 'user' object and correspond to the interface AuthRequest.
  * In the instance a token return a deleted user the authentification will fail.
  * @param req Incoming request.
@@ -57,28 +57,29 @@ export const authenticate = async(
 };
 
 /**
- * Check if the logged in user posses the required role to access a specific resource.
+ * Check if the user currently logged in posses the required role to access a specific resource.
  * @param allowedRoles Array of allowed roles.
  * @returns NextFunction or AppError.
  */
 export const authorize = (allowedRoles: string[]) => {
     return (req: AuthRequest, res: Response, next: NextFunction) => {
-        if (!req.user) {
-            next(
+        if (!req.user || req.user === undefined) {
+            return next(
                 new AppError(
                     "You need to be logged in to access this ressource.",
                     401
                 )
             );
-        }
+        }        
         if (!allowedRoles.includes(req.user.role.toLowerCase())) {
-            next(
+            return next(
                 new AppError(
                     "Forbidden: Insuffisant rights to access this ressource.",
                     403
                 )
             );
         }
+        
         next();
     };
 };
