@@ -402,7 +402,7 @@ export class UserController {
             if (userId === undefined) {
                 throw new AppError("Missing userId", 404);
             }
-            userService.deleteUserById(parseInt(userId));
+            await userService.deleteUserById(parseInt(userId));
             res.status(200).json({
                 status: "success",
                 message: `User: ${userId} has been deleted successfully.`,
