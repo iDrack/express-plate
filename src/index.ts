@@ -8,10 +8,8 @@ import { logger } from "./config/logger.js";
 import { swaggerSpec } from "./config/swagger.js";
 import { errorHandler } from "./middlewares/errorHandler.js";
 import { httpLogger } from "./middlewares/httpLogger.js";
-import UserRoutes from "./modules/user/user.routes.js";
 import HealthRoutes from "./modules/health/health.routes.js";
-import redis from "./redis.js";
-import { EmailService } from "./modules/mail/mail.service.js";
+import UserRoutes from "./modules/user/user.routes.js";
 
 const app = express();
 dotenv.config({ path: "./.env" });
@@ -44,10 +42,10 @@ AppDataSource.initialize()
         app.listen(port, () => {
             if (process.env.NODE_ENV !== "production")
                 logger.info(
-                    `Server running on port ${port} in ${process.env.NODE_ENV} mode`
+                    `Server running on port ${port} in ${process.env.NODE_ENV} mode`,
                 );
             logger.info(
-                `Swagger docs available at http://localhost:${port}/api-docs`
+                `Swagger docs available at http://localhost:${port}/api-docs`,
             ); /*  */
         });
     })

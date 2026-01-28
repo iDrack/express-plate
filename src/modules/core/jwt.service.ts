@@ -7,8 +7,9 @@ interface JwtPayload {
     role: string;
 }
 
-interface ResetPasswordPayload {
-    
+interface PasswordResetRequestPayload {
+    sub: number;
+    purpose: string;
 }
 
 export class JwtService {
@@ -24,7 +25,7 @@ export class JwtService {
      * @returns JWT access token
      */
     static generateAccessToken(payload: JwtPayload): string {
-        if(!payload.id || !payload.name || !payload.role) {
+        if (!payload.id || !payload.name || !payload.role) {
             throw new AppError("Missing arguments in payload.", 500);
         }
         if (!this.SECRET || !this.EXPIRES_IN) {
@@ -41,7 +42,7 @@ export class JwtService {
      * @returns JWT refresh token
      */
     static generateRefreshToken(payload: JwtPayload): string {
-        if(!payload.id || !payload.name || !payload.role) {
+        if (!payload.id || !payload.name || !payload.role) {
             throw new AppError("Missing arguments in payload.", 500);
         }
         if (!this.REFRESH_SECRET || !this.REFRESH_EXPIRES_IN) {
@@ -58,7 +59,7 @@ export class JwtService {
      * @returns JWTPayload for tested access token
      */
     static verifyAccessToken(token: string): JwtPayload {
-        if(!this.SECRET) {
+        if (!this.SECRET) {
             throw new AppError("Missing JWT secret in .env.", 500);
         }
         try {
@@ -70,11 +71,11 @@ export class JwtService {
 
     /**
      * Check if a JWT is valid or not
-     * @param token JWT refresh to token to test
+     * @param token JWT refresh to test
      * @returns JWTPayload for tested refresh token
      */
     static verifyRefreshToken(token: string): JwtPayload {
-        if(!this.REFRESH_SECRET) {
+        if (!this.REFRESH_SECRET) {
             throw new AppError("Missing JWT refresh secret in .env.", 500);
         }
         try {

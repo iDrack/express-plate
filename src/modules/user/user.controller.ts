@@ -1,8 +1,8 @@
+import type { NextFunction, Request, Response } from "express";
 import { AppError } from "../../middlewares/errorHandler.js";
 import type { User } from "../../models/user.js";
 import { JwtService } from "../core/jwt.service.js";
 import { userService } from "./user.service.js";
-import type { Request, Response, NextFunction } from "express";
 import type { UserProfile } from "./user.types.js";
 
 export class UserController {
@@ -58,14 +58,14 @@ export class UserController {
     async createUser(
         req: Request,
         res: Response,
-        next: NextFunction
+        next: NextFunction,
     ): Promise<void> {
         try {
             const { name, email, password } = req.body;
             if (!name || !email || !password) {
                 throw new AppError(
                     "You need a name, an e-mail and a password to create a user account.",
-                    400
+                    400,
                 );
             }
 
@@ -73,7 +73,7 @@ export class UserController {
                 if (await userService.getUserByEmail(email)) {
                     throw new AppError(
                         `E-mail :${email} is already in use, please try a different one.`,
-                        409
+                        409,
                     );
                 }
             } catch (error) {
@@ -86,7 +86,7 @@ export class UserController {
                 if (await userService.getUserByName(name)) {
                     throw new AppError(
                         `Username :${email} is already in use, please try a different one.`,
-                        409
+                        409,
                     );
                 }
             } catch (error) {
@@ -110,7 +110,7 @@ export class UserController {
     async loginUser(
         req: Request,
         res: Response,
-        next: NextFunction
+        next: NextFunction,
     ): Promise<void> {
         try {
             const { name, email, password } = req.body;
@@ -120,7 +120,7 @@ export class UserController {
             const user = await userService.testCredentials(
                 name,
                 email,
-                password
+                password,
             );
             await this.prepareTokens(res, 200, user);
         } catch (error) {
@@ -137,7 +137,7 @@ export class UserController {
     async logoutUser(
         req: Request,
         res: Response,
-        next: NextFunction
+        next: NextFunction,
     ): Promise<void> {
         try {
             res.clearCookie("refreshToken", { path: "/users/refresh" });
@@ -159,7 +159,7 @@ export class UserController {
     async refreshToken(
         req: Request,
         res: Response,
-        next: NextFunction
+        next: NextFunction,
     ): Promise<void> {
         try {
             const refreshToken = req.cookies.refreshToken;
@@ -195,13 +195,13 @@ export class UserController {
     async getProfile(
         req: Request,
         res: Response,
-        next: NextFunction
+        next: NextFunction,
     ): Promise<void> {
         try {
             if (!req.user.id) {
                 throw new AppError(
                     "You need to be logged in to access your profile.",
-                    401
+                    401,
                 );
             }
 
@@ -236,7 +236,7 @@ export class UserController {
     async getAllUser(
         req: Request,
         res: Response,
-        next: NextFunction
+        next: NextFunction,
     ): Promise<void> {
         try {
             const users = await userService.getAllUsers();
@@ -258,14 +258,14 @@ export class UserController {
     async getUser(
         req: Request,
         res: Response,
-        next: NextFunction
+        next: NextFunction,
     ): Promise<void> {
         try {
             if (req.params.id === undefined) {
                 throw new AppError("Missing userId.", 404);
             } else {
                 const user = await userService.getUserById(
-                    parseInt(req.params.id)
+                    parseInt(req.params.id),
                 );
                 if (!user) {
                     throw new AppError("User not found.", 404);
@@ -293,13 +293,13 @@ export class UserController {
     async updateUser(
         req: Request,
         res: Response,
-        next: NextFunction
+        next: NextFunction,
     ): Promise<void> {
         try {
             if (!req.user.id) {
                 throw new AppError(
                     "You need to be logged in to update your profile.",
-                    401
+                    401,
                 );
             }
             const { email, name, role } = req.body;
@@ -324,13 +324,13 @@ export class UserController {
     async updatePassword(
         req: Request,
         res: Response,
-        next: NextFunction
+        next: NextFunction,
     ): Promise<void> {
         try {
             if (!req.user.id) {
                 throw new AppError(
                     "You need to be logged in to update your profile.",
-                    401
+                    401,
                 );
             }
 
@@ -338,7 +338,7 @@ export class UserController {
             const user = await userService.updatePassword(
                 req.user.id,
                 oldPassword,
-                newPassword
+                newPassword,
             );
 
             //Login user again to get new tokens based on the updated data
@@ -358,13 +358,13 @@ export class UserController {
     async deleteUser(
         req: Request,
         res: Response,
-        next: NextFunction
+        next: NextFunction,
     ): Promise<void> {
         try {
             if (!req.user.id) {
                 throw new AppError(
                     "You need to be logged in to update your profile.",
-                    401
+                    401,
                 );
             }
             const { password } = req.body;
@@ -377,7 +377,7 @@ export class UserController {
             } else {
                 throw new AppError(
                     "Cannot delete user account : Incorrect password.",
-                    401
+                    401,
                 );
             }
         } catch (error) {
@@ -394,7 +394,7 @@ export class UserController {
     async deleteUserById(
         req: Request,
         res: Response,
-        next: NextFunction
+        next: NextFunction,
     ): Promise<void> {
         try {
             const userId = req.params.id;
@@ -406,6 +406,43 @@ export class UserController {
             res.status(200).json({
                 status: "success",
                 message: `User: ${userId} has been deleted successfully.`,
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    /**
+     * Create a password reset request and send a link to the email specified in the request's body.
+     * @param req Incoming HTTP request.
+     * @param res Response or the incoming HTTP request.
+     * @param next Following function.
+     */
+    async forgotPassword(
+        req: Request,
+        res: Response,
+        next: NextFunction,
+    ): Promise<void> {
+        try {
+            const { email } = req.body;
+            if (!email) {
+                throw new AppError("Missing e-mail", 400);
+            }
+            try {
+                const user = await userService.getUserByEmail(email);
+
+                if (user !== null && user !== undefined) {
+                    await userService.passwordResetRequest(user);
+                }
+            } catch (error) {
+                if (error instanceof AppError && error.statusCode !== 404) {
+                    throw error;
+                }
+            }
+
+            res.status(200).json({
+                status: "success",
+                message: `If the email exists, a reset link has been sent.`,
             });
         } catch (error) {
             next(error);

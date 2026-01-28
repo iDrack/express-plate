@@ -5,18 +5,20 @@ import type { OutgoingMail } from "./templates/OutgoingMail.js";
 import type { User } from "../../models/user.js";
 import { ResetPasswordMail } from "./templates/ResetPasswordMail.js";
 
-
-export class EmailService {
-    private static instance: EmailService;
+export class MailService {
+    private static instance: MailService;
     private mailUser: string;
 
-    private transporter;
+    private transporter: nodemailer.Transporter<
+        SMTPTransport.SentMessageInfo,
+        SMTPTransport.Options
+    >;
 
     static getInstance() {
-        if (!EmailService.instance) {
-            EmailService.instance = new EmailService();
+        if (!MailService.instance) {
+            MailService.instance = new MailService();
         }
-        return EmailService.instance;
+        return MailService.instance;
     }
 
     constructor() {
@@ -49,6 +51,11 @@ export class EmailService {
         }
     }
 
+    /**
+     * Send an e-mail.
+     * @param mail E-mail containing mail's recipient, subject and body.
+     * @returns Message info.
+     */
     async sendEmail(
         mail: OutgoingMail,
     ): Promise<SMTPTransport.SentMessageInfo> {
@@ -64,11 +71,20 @@ export class EmailService {
         return info;
     }
 
-    async resetEmailRequest(user: User, token: string): Promise<SMTPTransport.SentMessageInfo> {
+    /**
+     * Send an email containing a password reset link to the specified user's e-mail address.
+     * @param user User requesting a password reset.
+     * @param token Password reset token.
+     * @returns Message info.
+     */
+    async resetEmailRequest(
+        user: User,
+        token: string,
+    ): Promise<SMTPTransport.SentMessageInfo> {
         logger.info(`Password reset request for user ${user.id}`);
         const info = this.sendEmail(new ResetPasswordMail(user, token));
         return info;
     }
 }
 
-export const emailService = EmailService.getInstance();
+export const mailService = MailService.getInstance();

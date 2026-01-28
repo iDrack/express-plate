@@ -470,7 +470,7 @@ router.put("/", authenticate, controller.updateUser);
 
 /**
  * @swagger
- * /users/passwordChange:
+ * /users/password-change:
  *   put:
  *     summary: Change current user password
  *     tags: [Users]
@@ -507,7 +507,47 @@ router.put("/", authenticate, controller.updateUser);
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.put("/passwordChange", authenticate, controller.updatePassword);
+router.put("/password-change", authenticate, controller.updatePassword);
+
+/**
+ * @swagger
+ * /users/forgot-password:
+ *   post:
+ *     summary: Request password reset link
+ *     tags: [Users]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 description: Email address of the account to reset
+ *             example:
+ *               email: "contact@jdoe.com"
+ *     responses:
+ *       200:
+ *         description: If the email exists, a reset link has been sent.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: success
+ *                 message:
+ *                   type: string
+ *                   example: If the email exists, a reset link has been sent.
+ *       429:
+ *         description: Too many attempts
+ */
+router.post("/forgot-password", controller.forgotPassword);
 
 /**
  * @swagger
@@ -604,6 +644,11 @@ router.delete("/", authenticate, controller.deleteUser);
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.delete("/:id", authenticate, authorize(["admin"]), controller.deleteUserById);
+router.delete(
+    "/:id",
+    authenticate,
+    authorize(["admin"]),
+    controller.deleteUserById,
+);
 
 export default router;

@@ -28,8 +28,3 @@ redis.on("reconnecting", () => {
 });
 
 export default redis;
-
-//TODO: Ajouter un module d'envoie de mail
-//TODO: Ajouter un service qui génère un url et un mail pour reset un mdp
-//TODO: Créer une route pour gérer la demande de reset de mdp (avec JWT temporaire et enregistré dans redis)
-//TODO: Créer une route et service pour gérer la mise à jour d'un mdp reset (mettre à jour le JWT temp dans redis)
