@@ -7,6 +7,10 @@ interface JwtPayload {
     role: string;
 }
 
+interface ResetPasswordPayload {
+    
+}
+
 export class JwtService {
     private static SECRET = process.env.JWT_SECRET as string;
     private static REFRESH_SECRET = process.env.JWT_REFRESH_SECRET as string;

@@ -11,6 +11,7 @@ import { httpLogger } from "./middlewares/httpLogger.js";
 import UserRoutes from "./modules/user/user.routes.js";
 import HealthRoutes from "./modules/health/health.routes.js";
 import redis from "./redis.js";
+import { EmailService } from "./modules/mail/mail.service.js";
 
 const app = express();
 dotenv.config({ path: "./.env" });
