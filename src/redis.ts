@@ -7,24 +7,26 @@ const redis = new Redis({
     ...(process.env.REDIS_PASSWORD && { password: process.env.REDIS_PASSWORD }),
 });
 
-redis.on("connect", () => {
-    logger.info("Redis client connected");
-});
+if (process.env.NODE_ENV !== "test") {
+    redis.on("connect", () => {
+        logger.info("Redis client connected");
+    });
 
-redis.on("ready", () => {
-    logger.info("Redis client ready");
-});
+    redis.on("ready", () => {
+        logger.info("Redis client ready");
+    });
 
-redis.on("error", (err) => {
-    logger.error("Redis client error:", err);
-});
+    redis.on("error", (err) => {
+        logger.error("Redis client error:", err);
+    });
 
-redis.on("close", () => {
-    logger.warn("Redis client connection closed");
-});
+    redis.on("close", () => {
+        logger.warn("Redis client connection closed");
+    });
 
-redis.on("reconnecting", () => {
-    logger.warn("Redis client reconnecting...");
-});
+    redis.on("reconnecting", () => {
+        logger.warn("Redis client reconnecting...");
+    });
+}
 
 export default redis;

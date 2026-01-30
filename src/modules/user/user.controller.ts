@@ -438,6 +438,9 @@ export class UserController {
                 if (error instanceof AppError && error.statusCode !== 404) {
                     throw error;
                 }
+                if(!(error instanceof AppError)) {
+                    throw error;
+                }
             }
 
             res.status(200).json({
