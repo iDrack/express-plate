@@ -448,4 +448,36 @@ export class UserController {
             next(error);
         }
     }
+
+    /**
+     * UPdate a user password. The user is identified by the password request token passed in the body of the request.
+     * @param req Incoming HTTP request.
+     * @param res Response or the incoming HTTP request.
+     * @param next Following function.
+     */
+    async resetPassword(
+        req: Request,
+        res: Response,
+        next: NextFunction,
+    ): Promise<void> {
+        try {
+            const {token, password} = req.body
+            if(!token || token === "") {
+                throw new AppError("You're missing a password reset token.", 405);
+            }
+
+            if(!password || token === "") {
+                throw new AppError("Your new password cannot be blank.", 405);
+            }
+
+            const user = await userService.passwordReset(token, password);
+
+            res.status(200).json({
+                status: "success",
+                message: "Password updated, you can log in now."
+            });
+        } catch (error) {
+            next(error)
+        }
+    }
 }

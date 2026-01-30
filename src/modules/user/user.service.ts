@@ -288,13 +288,50 @@ class UserService {
         // Store user ID in Redis with the token as key
         // Key: pwdreset:<urlToken>
         // Value: userId
-        // TTL: 15min
+        // TTL: 10min
         const redisKey = `pwdreset:${urlToken}`;
-        await redis.set(redisKey, user.id.toString(), "EX", 15 * 60, "NX");
+        await redis.set(redisKey, user.id.toString(), "EX", 600, "NX");
 
         const res = mailService.resetEmailRequest(user, urlToken);
     }
-    //TODO: Créer une route et service pour gérer la mise à jour d'un mdp reset (rechercher dans redis puis valider la mise à jour du mdp)
+
+    /**
+     * Update a user password based on a password reset request token.
+     * @param tokenHash Token password request to consume.
+     * @param newPassword New password.
+     * @returns Updated User.
+     */
+    async passwordReset(tokenHash: string, newPassword: string): Promise<User> {
+        const token = await redis.get(`pwdreset:${tokenHash}`);
+
+        if (!token || token === "") {
+            throw new AppError("Unable to process request.", 400);
+        }
+
+        const userId = parseInt(token)
+        const user = await this.getUserById(userId)
+        const isPasswordSame = await bcrypt.compare(
+            newPassword,
+            user.password,
+        );
+
+        if(isPasswordSame) {
+            throw new AppError(
+                "New password cannot be the same as old one.",
+                405,
+            );
+        }
+        if (!this.passwordRegex.test(newPassword)) {
+            throw new AppError("Invalid password format.", 400);
+        }
+        const passwordHash = await bcrypt.hash(newPassword, 10);
+
+        user.password = passwordHash;
+
+        redis.del(`pwdreset:${tokenHash}`)
+        return this.userRepository.save(user);
+    
+    }
 }
 
 export const userService = UserService.getInstance();

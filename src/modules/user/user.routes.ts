@@ -551,6 +551,70 @@ router.post("/forgot-password", controller.forgotPassword);
 
 /**
  * @swagger
+ * /users/password-reset:
+ *   put:
+ *     summary: Reset user password using reset token
+ *     tags: [Users]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - token
+ *               - password
+ *             properties:
+ *               token:
+ *                 type: string
+ *                 description: Password reset token received by email
+ *               password:
+ *                 type: string
+ *                 minLength: 8
+ *                 pattern: '^.*(?=.{8,})(?=.*[a-zA-Z])(?=.*\\d)(?=.*[!#$%&? "]).*$'
+ *                 description: New password (8 characters minimum, must contain letters, numbers and special characters)
+ *             example:
+ *               token: "a1b2c3d4e5f6..."
+ *               password: "NewP@ssword123"
+ *     responses:
+ *       200:
+ *         description: Password updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: success
+ *                 message:
+ *                   type: string
+ *                   example: Password updated, you can log in now.
+ *       400:
+ *         description: Invalid password format
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: Invalid or expired token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       405:
+ *         description: Missing token or password, or new password same as old one
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       429:
+ *         description: Too many attempts
+ */
+router.put("/password-reset", controller.resetPassword);
+
+/**
+ * @swagger
  * /users:
  *   delete:
  *     summary: Delete current user account
