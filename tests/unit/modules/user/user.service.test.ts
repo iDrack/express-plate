@@ -37,13 +37,24 @@ jest.mock("../../../../src/models/role", () => {
     };
 });
 
+// Mock mail service
+jest.mock("../../../../src/modules/mail/mail.service", () => ({
+    mailService: {
+        resetEmailRequest: jest.fn(),
+    },
+}));
+
 import { AppDataSource } from "../../../../src/config/database";
 import { userService } from "../../../../src/modules/user/user.service";
 import { JwtService } from "../../../../src/modules/core/jwt.service";
 import { toRole } from "../../../../src/models/role";
+import { mailService } from "../../../../src/modules/mail/mail.service";
+import redis from "../../../../src/redis";
 
 //const mockUserRepository = mockRepository as any;
 const mockUserRepository = AppDataSource.getRepository(User) as any;
+const mockMailService = mailService as jest.Mocked<typeof mailService>;
+const mockRedis = jest.mocked(redis);
 
 describe("UserService", () => {
     let testUser: User;
@@ -74,7 +85,7 @@ describe("UserService", () => {
             const result = await userService.testCredentials(
                 "testUser",
                 "",
-                "testPassword"
+                "testPassword",
             );
 
             //Assert
@@ -87,7 +98,7 @@ describe("UserService", () => {
         it("should throw an AppError when email and username is missing.", async () => {
             //Assert
             await expect(
-                userService.testCredentials("", "", "testPassword")
+                userService.testCredentials("", "", "testPassword"),
             ).rejects.toThrow(AppError);
         });
 
@@ -100,8 +111,8 @@ describe("UserService", () => {
                 userService.testCredentials(
                     "testUser",
                     "test@test.com",
-                    "testPassword"
-                )
+                    "testPassword",
+                ),
             ).rejects.toThrow(AppError);
         });
 
@@ -113,8 +124,8 @@ describe("UserService", () => {
                 userService.testCredentials(
                     "testUser",
                     "test@test.com",
-                    "wrongPassword"
-                )
+                    "wrongPassword",
+                ),
             ).rejects.toThrow(AppError);
         });
     });
@@ -160,7 +171,7 @@ describe("UserService", () => {
             await expect(userService.getUserById(1)).rejects.toThrow(AppError);
             await expect(userService.getUserById(1)).rejects.toHaveProperty(
                 "statusCode",
-                404
+                404,
             );
         });
     });
@@ -207,10 +218,10 @@ describe("UserService", () => {
 
             //Act & Assert
             await expect(userService.getUserByName("test")).rejects.toThrow(
-                AppError
+                AppError,
             );
             await expect(
-                userService.getUserByName("test")
+                userService.getUserByName("test"),
             ).rejects.toHaveProperty("statusCode", 404);
         });
     });
@@ -233,10 +244,10 @@ describe("UserService", () => {
 
             //Act & Assert
             await expect(
-                userService.getUserByEmail("test@test.com")
+                userService.getUserByEmail("test@test.com"),
             ).rejects.toThrow(AppError);
             await expect(
-                userService.getUserByEmail("test@test.com")
+                userService.getUserByEmail("test@test.com"),
             ).rejects.toHaveProperty("statusCode", 404);
         });
     });
@@ -277,7 +288,7 @@ describe("UserService", () => {
             const result = await userService.createUser(
                 "newUser",
                 "new@test.com",
-                "ValidPass123!"
+                "ValidPass123!",
             );
 
             //Assert
@@ -315,7 +326,7 @@ describe("UserService", () => {
             await userService.createUser(
                 "newUser",
                 "new@test.com",
-                "ValidPass123!"
+                "ValidPass123!",
             );
 
             //Assert
@@ -382,7 +393,7 @@ describe("UserService", () => {
             await userService.updatePassword(
                 1,
                 "testPassword",
-                "ValidPass123!"
+                "ValidPass123!",
             );
 
             //Assert
@@ -393,7 +404,7 @@ describe("UserService", () => {
             // Verify the new password is correctly hashed
             const isValidHash = await bcrypt.compare(
                 "ValidPass123!",
-                updateCall.password
+                updateCall.password,
             );
             expect(isValidHash).toBe(true);
         });
@@ -407,7 +418,7 @@ describe("UserService", () => {
                 await userService.updatePassword(
                     1,
                     "wrongPassword",
-                    "ValidPass123!"
+                    "ValidPass123!",
                 );
                 fail("Should have thrown an error");
             } catch (error: any) {
@@ -426,14 +437,14 @@ describe("UserService", () => {
                 await userService.updatePassword(
                     1,
                     "testPassword",
-                    "testPassword"
+                    "testPassword",
                 );
                 fail("Should have thrown an error");
             } catch (error: any) {
                 expect(error).toBeInstanceOf(AppError);
                 expect(error.statusCode).toBe(405);
                 expect(error.message).toBe(
-                    "New password cannot be the same as old one."
+                    "New password cannot be the same as old one.",
                 );
             }
         });
@@ -462,7 +473,7 @@ describe("UserService", () => {
                 await userService.updatePassword(
                     999,
                     "testPassword",
-                    "ValidPass123!"
+                    "ValidPass123!",
                 );
                 fail("Should have thrown an error");
             } catch (error: any) {
@@ -535,7 +546,7 @@ describe("UserService", () => {
                 expect(error).toBeInstanceOf(AppError);
                 expect(error.statusCode).toBe(401);
                 expect(error.message).toBe(
-                    "Cannot delete user account : Incorrect password."
+                    "Cannot delete user account : Incorrect password.",
                 );
             }
         });
@@ -553,6 +564,236 @@ describe("UserService", () => {
                 expect(error.statusCode).toBe(404);
                 expect(error.message).toBe("User not found.");
             }
+        });
+    });
+
+    describe("passwordResetRequest", () => {
+        it("should create a reset token, store it in redis and send an email", async () => {
+            // Arrange
+            mockRedis.set.mockResolvedValue("OK" as any);
+            mockMailService.resetEmailRequest.mockResolvedValue({} as any);
+
+            // Act
+            await userService.passwordResetRequest(testUser);
+
+            // Assert
+            expect(mockRedis.set).toHaveBeenCalledWith(
+                expect.stringMatching(/^pwdreset:/),
+                "1",
+                "EX",
+                600,
+                "NX",
+            );
+            expect(mockMailService.resetEmailRequest).toHaveBeenCalledWith(
+                testUser,
+                expect.any(String),
+            );
+        });
+
+        it("should generate a random token each time", async () => {
+            // Arrange
+            mockRedis.set.mockResolvedValue("OK" as any);
+            mockMailService.resetEmailRequest.mockResolvedValue({} as any);
+
+            // Act
+            await userService.passwordResetRequest(testUser);
+            await userService.passwordResetRequest(testUser);
+
+            // Assert
+            const firstCall = (mockRedis.set as jest.Mock).mock.calls[0][0];
+            const secondCall = (mockRedis.set as jest.Mock).mock.calls[1][0];
+            expect(firstCall).not.toBe(secondCall);
+        });
+    });
+
+    describe("passwordReset", () => {
+        const validToken = "valid-reset-token";
+        const validPassword = "NewP@ssw0rd";
+
+        beforeEach(() => {
+            testUser.password = bcrypt.hashSync("OldP@ssw0rd", 10);
+        });
+
+        it("should successfully reset password with valid token and new password", async () => {
+            // Arrange
+            mockRedis.get.mockResolvedValue("1");
+            mockUserRepository.findOne.mockResolvedValue(testUser);
+            mockUserRepository.save.mockResolvedValue({
+                ...testUser,
+                password: expect.any(String),
+            });
+            mockRedis.del.mockResolvedValue(1);
+
+            // Act
+            const result = await userService.passwordReset(
+                validToken,
+                validPassword,
+            );
+
+            // Assert
+            expect(mockRedis.get).toHaveBeenCalledWith(
+                `pwdreset:${validToken}`,
+            );
+            expect(mockUserRepository.findOne).toHaveBeenCalledWith({
+                where: { id: 1 },
+            });
+            expect(mockRedis.del).toHaveBeenCalledWith(
+                `pwdreset:${validToken}`,
+            );
+            expect(mockUserRepository.save).toHaveBeenCalled();
+            expect(result).toBeDefined();
+        });
+
+        it("should throw AppError with status 400 when token is not found in redis", async () => {
+            // Arrange
+            mockRedis.get.mockResolvedValue(null);
+
+            // Act & Assert
+            try {
+                await userService.passwordReset(validToken, validPassword);
+                fail("Should have thrown an error");
+            } catch (error: any) {
+                expect(error).toBeInstanceOf(AppError);
+                expect(error.statusCode).toBe(400);
+                expect(error.message).toBe("Unable to process request.");
+            }
+        });
+
+        it("should throw AppError with status 400 when token is empty string", async () => {
+            // Arrange
+            mockRedis.get.mockResolvedValue("");
+
+            // Act & Assert
+            try {
+                await userService.passwordReset(validToken, validPassword);
+                fail("Should have thrown an error");
+            } catch (error: any) {
+                expect(error).toBeInstanceOf(AppError);
+                expect(error.statusCode).toBe(400);
+                expect(error.message).toBe("Unable to process request.");
+            }
+        });
+
+        it("should throw AppError with status 405 when new password is same as old password", async () => {
+            // Arrange
+            const samePassword = "OldP@ssw0rd";
+            mockRedis.get.mockResolvedValue("1");
+            mockUserRepository.findOne.mockResolvedValue(testUser);
+
+            // Act & Assert
+            try {
+                await userService.passwordReset(validToken, samePassword);
+                fail("Should have thrown an error");
+            } catch (error: any) {
+                expect(error).toBeInstanceOf(AppError);
+                expect(error.statusCode).toBe(405);
+                expect(error.message).toBe(
+                    "New password cannot be the same as old one.",
+                );
+            }
+        });
+
+        it("should throw AppError with status 400 when password format is invalid (no special characters)", async () => {
+            // Arrange
+            const invalidPassword = "NoSpecial123";
+            mockRedis.get.mockResolvedValue("1");
+            mockUserRepository.findOne.mockResolvedValue(testUser);
+
+            // Act & Assert
+            try {
+                await userService.passwordReset(validToken, invalidPassword);
+                fail("Should have thrown an error");
+            } catch (error: any) {
+                expect(error).toBeInstanceOf(AppError);
+                expect(error.statusCode).toBe(400);
+                expect(error.message).toBe("Invalid password format.");
+            }
+        });
+
+        it("should throw AppError with status 400 when password format is invalid (no numbers)", async () => {
+            // Arrange
+            const invalidPassword = "NoNumbers!@#";
+            mockRedis.get.mockResolvedValue("1");
+            mockUserRepository.findOne.mockResolvedValue(testUser);
+
+            // Act & Assert
+            try {
+                await userService.passwordReset(validToken, invalidPassword);
+                fail("Should have thrown an error");
+            } catch (error: any) {
+                expect(error).toBeInstanceOf(AppError);
+                expect(error.statusCode).toBe(400);
+                expect(error.message).toBe("Invalid password format.");
+            }
+        });
+
+        it("should throw AppError with status 400 when password format is invalid (too short)", async () => {
+            // Arrange
+            const invalidPassword = "Sh0rt!";
+            mockRedis.get.mockResolvedValue("1");
+            mockUserRepository.findOne.mockResolvedValue(testUser);
+
+            // Act & Assert
+            try {
+                await userService.passwordReset(validToken, invalidPassword);
+                fail("Should have thrown an error");
+            } catch (error: any) {
+                expect(error).toBeInstanceOf(AppError);
+                expect(error.statusCode).toBe(400);
+                expect(error.message).toBe("Invalid password format.");
+            }
+        });
+
+        it("should throw AppError with status 404 when user is not found", async () => {
+            // Arrange
+            mockRedis.get.mockResolvedValue("999");
+            mockUserRepository.findOne.mockResolvedValue(null);
+
+            // Act & Assert
+            try {
+                await userService.passwordReset(validToken, validPassword);
+                fail("Should have thrown an error");
+            } catch (error: any) {
+                expect(error).toBeInstanceOf(AppError);
+                expect(error.statusCode).toBe(404);
+                expect(error.message).toBe("User not found.");
+            }
+        });
+
+        it("should hash the new password before saving", async () => {
+            // Arrange
+            mockRedis.get.mockResolvedValue("1");
+            mockUserRepository.findOne.mockResolvedValue(testUser);
+            mockUserRepository.save.mockImplementation((user: User) =>
+                Promise.resolve(user),
+            );
+            mockRedis.del.mockResolvedValue(1);
+
+            // Act
+            await userService.passwordReset(validToken, validPassword);
+
+            // Assert
+            const savedUser = (mockUserRepository.save as jest.Mock).mock
+                .calls[0][0];
+            expect(savedUser.password).not.toBe(validPassword);
+            expect(savedUser.password.length).toBeGreaterThan(20); // bcrypt hash length
+        });
+
+        it("should delete the token from redis after successful password reset", async () => {
+            // Arrange
+            mockRedis.get.mockResolvedValue("1");
+            mockUserRepository.findOne.mockResolvedValue(testUser);
+            mockUserRepository.save.mockResolvedValue(testUser);
+            mockRedis.del.mockResolvedValue(1);
+
+            // Act
+            await userService.passwordReset(validToken, validPassword);
+
+            // Assert
+            expect(mockRedis.del).toHaveBeenCalledWith(
+                `pwdreset:${validToken}`,
+            );
+            expect(mockRedis.del).toHaveBeenCalledTimes(1);
         });
     });
 });

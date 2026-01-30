@@ -1,12 +1,14 @@
+import bcrypt from "bcrypt";
 import type { Repository } from "typeorm";
 import { AppDataSource } from "../../config/database.js";
-import { User } from "../../models/user.js";
-import { AppError } from "../../middlewares/errorHandler.js";
-import bcrypt from "bcrypt";
-import { JwtService } from "../core/jwt.service.js";
-import type { TokensResponse } from "./user.types.js";
 import { logger } from "../../config/logger.js";
+import { AppError } from "../../middlewares/errorHandler.js";
 import { toRole } from "../../models/role.js";
+import { User } from "../../models/user.js";
+import redis from "../../redis.js";
+import { JwtService } from "../core/jwt.service.js";
+import { mailService } from "../mail/mail.service.js";
+import type { TokensResponse } from "./user.types.js";
 
 class UserService {
     private userRepository: Repository<User>;
@@ -38,15 +40,18 @@ class UserService {
     async testCredentials(
         name: string,
         email: string,
-        password: string
+        password: string,
     ): Promise<User> {
         let user;
         if (email) {
             user = await this.userRepository.findOne({ where: { email } });
-        } else if(name) {
+        } else if (name) {
             user = await this.userRepository.findOne({ where: { name } });
         } else {
-            throw new AppError(`Unable to find user, provide an email or an username.`, 404);
+            throw new AppError(
+                `Unable to find user, provide an email or an username.`,
+                404,
+            );
         }
 
         if (!user || user === undefined) {
@@ -107,9 +112,9 @@ class UserService {
         try {
             const user = await this.userRepository.findOne({
                 where: { id: userId },
-            });            
-            
-            return (user !== null && user !== undefined);
+            });
+
+            return user !== null && user !== undefined;
         } catch (error) {
             logger.error(error);
             return false;
@@ -156,7 +161,7 @@ class UserService {
     async createUser(
         name: string,
         email: string,
-        password: string
+        password: string,
     ): Promise<User> {
         if (!this.passwordRegex.test(password)) {
             throw new AppError("Invalid password format.", 400);
@@ -190,7 +195,7 @@ class UserService {
      */
     async updateUser(
         id: number,
-        newData: { name: string; email: string; role: string }
+        newData: { name: string; email: string; role: string },
     ): Promise<User> {
         const userToUpdate = await this.getUserById(id);
         const { email, name, role } = newData;
@@ -213,18 +218,18 @@ class UserService {
     async updatePassword(
         id: number,
         oldPassword: string,
-        newPassword: string
+        newPassword: string,
     ): Promise<User> {
         if (oldPassword === newPassword) {
             throw new AppError(
                 "New password cannot be the same as old one.",
-                405
+                405,
             );
         }
         const userToUpdate = await this.getUserById(id);
         const isPasswordValid = await bcrypt.compare(
             oldPassword,
-            userToUpdate.password
+            userToUpdate.password,
         );
         if (!isPasswordValid) {
             throw new AppError("Incorrect password.", 401);
@@ -266,9 +271,66 @@ class UserService {
         } else {
             throw new AppError(
                 "Cannot delete user account : Incorrect password.",
-                401
+                401,
             );
         }
+    }
+
+    /**
+     * Generate a password reset token, save it in redis and sent it to the user requesting it.
+     * @param user User requesting a password reset.
+     */
+    async passwordResetRequest(user: User): Promise<void> {
+        // Generate a random opaque token for the URL
+        const crypto = await import("crypto");
+        const urlToken = crypto.randomBytes(32).toString("hex");
+
+        // Store user ID in Redis with the token as key
+        // Key: pwdreset:<urlToken>
+        // Value: userId
+        // TTL: 10min
+        const redisKey = `pwdreset:${urlToken}`;
+        await redis.set(redisKey, user.id.toString(), "EX", 600, "NX");
+
+        const res = mailService.resetEmailRequest(user, urlToken);
+    }
+
+    /**
+     * Update a user password based on a password reset request token.
+     * @param tokenHash Token password request to consume.
+     * @param newPassword New password.
+     * @returns Updated User.
+     */
+    async passwordReset(tokenHash: string, newPassword: string): Promise<User> {
+        const token = await redis.get(`pwdreset:${tokenHash}`);
+
+        if (!token || token === "") {
+            throw new AppError("Unable to process request.", 400);
+        }
+
+        const userId = parseInt(token)
+        const user = await this.getUserById(userId)
+        const isPasswordSame = await bcrypt.compare(
+            newPassword,
+            user.password,
+        );
+
+        if(isPasswordSame) {
+            throw new AppError(
+                "New password cannot be the same as old one.",
+                405,
+            );
+        }
+        if (!this.passwordRegex.test(newPassword)) {
+            throw new AppError("Invalid password format.", 400);
+        }
+        const passwordHash = await bcrypt.hash(newPassword, 10);
+
+        user.password = passwordHash;
+
+        redis.del(`pwdreset:${tokenHash}`)
+        return this.userRepository.save(user);
+    
     }
 }
 
