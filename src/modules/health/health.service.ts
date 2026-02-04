@@ -129,16 +129,16 @@ class HealthService {
     async checkRedis(): Promise<DependencyCheck> {
         const startTime = Date.now();
         try {
-            if(!this.pingRedis()) {
+            if(!(await this.pingRedis())) {
                 return {
                     status: HealthStatus.UNHEALTHY,
                     responseTime: Date.now() - startTime,
-                    message: "Couldn't connect to Redis.",
+                    message: "Redis connection timeout.",
                 }
             }
     
             const redisStatus =  redis.status;
-            const responseTime = Date.now() - startTime;
+            const responseTime = Date.now() - startTime;           
             if(redisStatus === "ready" && responseTime<1000) {
                 return {
                     status: HealthStatus.HEALTHY,
@@ -147,7 +147,7 @@ class HealthService {
                 }
             } else if(redisStatus === "ready" && responseTime>=1000) {
                 return {
-                    status: HealthStatus.HEALTHY,
+                    status: HealthStatus.DEGRADED,
                     responseTime: responseTime,
                     message: "Slow Response time."
                 }
@@ -164,7 +164,7 @@ class HealthService {
                     message: "Couldn't connect to Redis.",
                 }
             }
-        } catch (error) {
+        } catch (error) {            
             const responseTime = Date.now() - startTime;
             return {
                 status: HealthStatus.UNHEALTHY,

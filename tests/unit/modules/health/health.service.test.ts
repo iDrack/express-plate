@@ -1,11 +1,20 @@
 import { healthService } from "../../../../src/modules/health/health.service";
 import { AppDataSource } from "../../../../src/config/database";
 import { HealthStatus } from "../../../../src/modules/health/health.types";
+import redis from "../../../../src/redis";
 
 jest.mock("../../../../src/config/database", () => ({
     AppDataSource: {
         query: jest.fn(),
         isInitialized: true,
+    },
+}));
+
+jest.mock("../../../../src/redis", () => ({
+    __esModule: true,
+    default: {
+        ping: jest.fn(),
+        status: "ready",
     },
 }));
 
@@ -461,6 +470,244 @@ describe("Health service class", () => {
 
             // Assert
             expect(result).toBe(HealthStatus.DEGRADED);
+        });
+    });
+
+    describe("pingDB", () => {
+        it("should return true when database status is HEALTHY", async () => {
+            // Arrange
+            (AppDataSource.query as jest.Mock).mockResolvedValue([
+                { result: 1 },
+            ]);
+            (AppDataSource as any).isInitialized = true;
+
+            // Act
+            const result = await healthService.pingDB();
+
+            // Assert
+            expect(result).toBe(true);
+            expect(AppDataSource.query).toHaveBeenCalledWith("SELECT 1");
+        });
+
+        it("should return false when database status is UNHEALTHY", async () => {
+            // Arrange
+            const mockError = new Error("Connection refused");
+            (AppDataSource.query as jest.Mock).mockRejectedValue(mockError);
+
+            // Act
+            const result = await healthService.pingDB();
+
+            // Assert
+            expect(result).toBe(false);
+        });
+
+        it("should return false when database status is DEGRADED", async () => {
+            // Arrange
+            (AppDataSource as any).isInitialized = true;
+            (AppDataSource.query as jest.Mock).mockImplementation(() => {
+                return new Promise((resolve) => {
+                    setTimeout(() => resolve([{ result: 1 }]), 1100);
+                });
+            });
+
+            // Act
+            const result = await healthService.pingDB();
+
+            // Assert
+            expect(result).toBe(false);
+        });
+
+        it("should return false when database is not initialized", async () => {
+            // Arrange
+            (AppDataSource.query as jest.Mock).mockResolvedValue([
+                { result: 1 },
+            ]);
+            (AppDataSource as any).isInitialized = false;
+
+            // Act
+            const result = await healthService.pingDB();
+
+            // Assert
+            expect(result).toBe(false);
+        });
+    });
+
+    describe("pingRedis", () => {
+        beforeEach(() => {
+            jest.clearAllMocks();
+        });
+
+        it("should return true when Redis ping is successful", async () => {
+            // Arrange
+            (redis.ping as jest.Mock).mockResolvedValue("PONG");
+
+            // Act
+            const result = await healthService.pingRedis();
+
+            // Assert
+            expect(result).toBe(true);
+            expect(redis.ping).toHaveBeenCalled();
+        });
+
+        it("should return false when Redis ping fails", async () => {
+            // Arrange
+            const mockError = new Error("Redis connection failed");
+            (redis.ping as jest.Mock).mockRejectedValue(mockError);
+
+            // Act
+            const result = await healthService.pingRedis();
+
+            // Assert
+            expect(result).toBe(false);
+            expect(redis.ping).toHaveBeenCalled();
+        });
+
+        it("should return false when Redis ping throws non-Error exception", async () => {
+            // Arrange
+            (redis.ping as jest.Mock).mockRejectedValue("String error");
+
+            // Act
+            const result = await healthService.pingRedis();
+
+            // Assert
+            expect(result).toBe(false);
+        });
+    });
+
+    describe("checkRedis", () => {
+        beforeEach(() => {
+            jest.clearAllMocks();
+            (redis as any).status = "ready";
+        });
+
+        it("should return HEALTHY status when Redis is ready with fast response", async () => {
+            // Arrange
+            (redis.ping as jest.Mock).mockResolvedValue("PONG");
+            (redis as any).status = "ready";
+
+            // Act
+            const result = await healthService.checkRedis();
+
+            // Assert
+            expect(result.status).toBe(HealthStatus.HEALTHY);
+            expect(result.responseTime).toBeLessThan(1000);
+            expect(result.message).toBe("Connection successful.");
+        });
+
+        it("should return DEGRADED status when Redis is ready with slow response", async () => {
+            // Arrange
+            (redis.ping as jest.Mock).mockImplementation(() => {
+                return new Promise((resolve) => {
+                    setTimeout(() => resolve("PONG"), 1100);
+                });
+            });
+            (redis as any).status = "ready";
+
+            // Act
+            const result = await healthService.checkRedis();
+
+            // Assert
+            expect(result.status).toBe(HealthStatus.DEGRADED);
+            expect(result.responseTime).toBeGreaterThanOrEqual(1000);
+            expect(result.message).toBe("Slow Response time.");
+        });
+
+        it("should return DEGRADED status when Redis is connecting", async () => {
+            // Arrange
+            (redis.ping as jest.Mock).mockResolvedValue("PONG");
+            (redis as any).status = "connect";
+
+            // Act
+            const result = await healthService.checkRedis();
+
+            // Assert
+            expect(result.status).toBe(HealthStatus.DEGRADED);
+            expect(result.message).toBe("Redis is reconnecting.");
+        });
+
+        it("should return DEGRADED status when Redis is reconnecting", async () => {
+            // Arrange
+            (redis.ping as jest.Mock).mockResolvedValue("PONG");
+            (redis as any).status = "reconnecting";
+
+            // Act
+            const result = await healthService.checkRedis();
+
+            // Assert
+            expect(result.status).toBe(HealthStatus.DEGRADED);
+            expect(result.message).toBe("Redis is reconnecting.");
+        });
+
+        it("should return UNHEALTHY status when Redis status is not ready/connect/reconnecting", async () => {
+            // Arrange
+            (redis.ping as jest.Mock).mockResolvedValue("PONG");
+            (redis as any).status = "close";
+
+            // Act
+            const result = await healthService.checkRedis();
+
+            // Assert
+            expect(result.status).toBe(HealthStatus.UNHEALTHY);
+            expect(result.message).toBe("Couldn't connect to Redis.");
+        });
+
+        it("should return UNHEALTHY status when Redis ping fails", async () => {
+            // Arrange
+            const mockError = new Error("Redis connection timeout");
+            (redis.ping as jest.Mock).mockRejectedValue(mockError);
+
+            // Act
+            const result = await healthService.checkRedis();
+
+            // Assert
+            expect(result.status).toBe(HealthStatus.UNHEALTHY);
+            expect(result.message).toBe("Redis connection timeout.");
+            expect(result.responseTime).toBeGreaterThanOrEqual(0);
+        });
+
+        it("should measure response time accurately", async () => {
+            // Arrange
+            const delayMs = 100;
+            (redis.ping as jest.Mock).mockImplementation(() => {
+                return new Promise((resolve) => {
+                    setTimeout(() => resolve("PONG"), delayMs);
+                });
+            });
+            (redis as any).status = "ready";
+
+            // Act
+            const result = await healthService.checkRedis();
+
+            // Assert
+            expect(result.responseTime).toBeGreaterThanOrEqual(delayMs);
+            expect(result.responseTime).toBeLessThan(delayMs + 50);
+            expect(result.status).toBe(HealthStatus.HEALTHY);
+        });
+
+        it("should return UNHEALTHY when Redis status is end", async () => {
+            // Arrange
+            (redis.ping as jest.Mock).mockResolvedValue("PONG");
+            (redis as any).status = "end";
+
+            // Act
+            const result = await healthService.checkRedis();
+
+            // Assert
+            expect(result.status).toBe(HealthStatus.UNHEALTHY);
+            expect(result.message).toBe("Couldn't connect to Redis.");
+        });
+
+        it("should return UNHEALTHY when Redis status is wait", async () => {
+            // Arrange
+            (redis.ping as jest.Mock).mockResolvedValue("PONG");
+            (redis as any).status = "wait";
+
+            // Act
+            const result = await healthService.checkRedis();
+
+            // Assert
+            expect(result.status).toBe(HealthStatus.UNHEALTHY);
+            expect(result.message).toBe("Couldn't connect to Redis.");
         });
     });
 });
