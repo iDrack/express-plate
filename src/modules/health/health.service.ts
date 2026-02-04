@@ -1,6 +1,7 @@
 import type { DataSource } from "typeorm";
 import { AppDataSource } from "../../config/database.js";
 import { HealthStatus, type DependencyCheck } from "./health.types.js";
+import redis from "../../redis.js";
 
 class HealthService {
     private static instance: HealthService;
@@ -20,11 +21,20 @@ class HealthService {
     }
 
     /**
-     * Get API uptime in seconds
-     * @returns uptime
+     * Get API uptime in seconds.
+     * @returns Uptime.
      */
     getUptime(): number {
         return Math.floor((Date.now() - this.startTime) / 1000);
+    }
+
+    /**
+     * Check if the database is available or not.
+     * @returns True if the database is available, otherwise return False;
+     */
+    async pingDB(): Promise<boolean> {
+        const dbCheck = await healthService.checkDatabase();
+        return dbCheck.status === HealthStatus.HEALTHY;
     }
 
     /**
@@ -100,13 +110,79 @@ class HealthService {
     }
 
     /**
+     * Test if redis is available.
+     * @returns True if redis is available, False otherwise.
+     */
+    async pingRedis(): Promise<boolean>{
+        try {
+            await redis.ping();
+            return true;
+        } catch(error) {
+            return false;
+        }
+    }
+
+    /**
+     * Check Redis database status.
+     * @returns Redis status.
+     */
+    async checkRedis(): Promise<DependencyCheck> {
+        const startTime = Date.now();
+        try {
+            if(!this.pingRedis()) {
+                return {
+                    status: HealthStatus.UNHEALTHY,
+                    responseTime: Date.now() - startTime,
+                    message: "Couldn't connect to Redis.",
+                }
+            }
+    
+            const redisStatus =  redis.status;
+            const responseTime = Date.now() - startTime;
+            if(redisStatus === "ready" && responseTime<1000) {
+                return {
+                    status: HealthStatus.HEALTHY,
+                    responseTime: responseTime,
+                    message: "Connection successful."
+                }
+            } else if(redisStatus === "ready" && responseTime>=1000) {
+                return {
+                    status: HealthStatus.HEALTHY,
+                    responseTime: responseTime,
+                    message: "Slow Response time."
+                }
+            }else if (redisStatus === "connect" || redisStatus === "reconnecting") {
+                return {
+                    status: HealthStatus.DEGRADED,
+                    responseTime: responseTime,
+                    message: "Redis is reconnecting."
+                }
+            } else{
+                return {
+                    status: HealthStatus.UNHEALTHY,
+                    responseTime: responseTime,
+                    message: "Couldn't connect to Redis.",
+                }
+            }
+        } catch (error) {
+            const responseTime = Date.now() - startTime;
+            return {
+                status: HealthStatus.UNHEALTHY,
+                responseTime,
+                message:
+                    error instanceof Error ? error.message : "Error unknown.",
+            };
+        }
+    }
+
+    /**
      * Determine the global status of the API.
      * @param checks Record of checks.
      * @returns Global status of every dependencies for the API.
      */
     checkGlobalStatus(checks: Record<string, DependencyCheck>): HealthStatus {
         const statuses = Object.values(checks).map((check) => check.status);
-
+        
         if (statuses.some((status) => status === HealthStatus.UNHEALTHY))
             return HealthStatus.UNHEALTHY;
         if (statuses.some((status) => status === HealthStatus.DEGRADED))

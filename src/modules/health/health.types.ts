@@ -20,7 +20,6 @@ export interface ReadinessCheckResponse {
   status: 'ready' | 'not_ready';
   timestamp: string;
   dependencies: {
-    database:  boolean;
     [key: string]: boolean;
   };
 }

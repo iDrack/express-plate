@@ -141,7 +141,7 @@ router.get("/live", controller.isAlive);
  * /health/ready:
  *   get:
  *     summary: Readiness probe
- *     description: Check if the application is ready to accept traffic
+ *     description: Check if the application and its dependencies (database and Redis) are ready to accept traffic
  *     tags:
  *       - Health
  *     responses:
@@ -153,9 +153,10 @@ router.get("/live", controller.isAlive);
  *               $ref: '#/components/schemas/ReadinessCheckResponse'
  *             example:
  *               status: ready
- *               timestamp: "2026-01-05T16:17:13.852Z"
+ *               timestamp: "2026-02-04T10:30:00.000Z"
  *               dependencies:
  *                 database: true
+ *                 redis: true
  *       503:
  *         description: Application is not ready
  *         content:
@@ -164,13 +165,86 @@ router.get("/live", controller.isAlive);
  *               $ref: '#/components/schemas/ReadinessCheckResponse'
  *             example:
  *               status: not_ready
- *               timestamp: "2026-01-05T16:17:13.852Z"
+ *               timestamp: "2026-02-04T10:30:00.000Z"
+ *               dependencies:
+ *                 database: false
+ *                 redis: false
+ *       429:
+ *         description: Too many requests
+ */
+router.get("/ready", controller.isReady);
+
+/**
+ * @swagger
+ * /health/ready/db:
+ *   get:
+ *     summary: Database readiness probe
+ *     description: Check if the database is ready to accept connections
+ *     tags:
+ *       - Health
+ *     responses:
+ *       200:
+ *         description: Database is ready
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ReadinessCheckResponse'
+ *             example:
+ *               status: ready
+ *               timestamp: "2026-02-04T10:30:00.000Z"
+ *               dependencies:
+ *                 database: true
+ *       503:
+ *         description: Database is not ready
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ReadinessCheckResponse'
+ *             example:
+ *               status: not_ready
+ *               timestamp: "2026-02-04T10:30:00.000Z"
  *               dependencies:
  *                 database: false
  *       429:
  *         description: Too many requests
  */
-router.get('/ready', controller.isReady);
+router.get("/ready/db", controller.isDBReady);
+
+/**
+ * @swagger
+ * /health/ready/redis:
+ *   get:
+ *     summary: Redis readiness probe
+ *     description: Check if Redis is ready to accept connections
+ *     tags:
+ *       - Health
+ *     responses:
+ *       200:
+ *         description: Redis is ready
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ReadinessCheckResponse'
+ *             example:
+ *               status: ready
+ *               timestamp: "2026-02-04T10:30:00.000Z"
+ *               dependencies:
+ *                 redis: true
+ *       503:
+ *         description: Redis is not ready
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ReadinessCheckResponse'
+ *             example:
+ *               status: not_ready
+ *               timestamp: "2026-02-04T10:30:00.000Z"
+ *               dependencies:
+ *                 redis: false
+ *       429:
+ *         description: Too many requests
+ */
+router.get("/ready/redis", controller.isRedisReady);
 
 /**
  * @swagger
@@ -219,6 +293,6 @@ router.get('/ready', controller.isReady);
  *       429:
  *         description: Too many requests
  */
-router.get('/detailed', controller.healthCheck);
+router.get("/detailed", controller.healthCheck);
 
 export default router;
