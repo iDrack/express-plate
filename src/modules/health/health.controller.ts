@@ -13,6 +13,7 @@ export class HealthController {
         this.isReady = this.isReady.bind(this);
         this.healthCheck = this.healthCheck.bind(this);
     }
+    
     /**
      * Simple function to quickly test if the API is up or not.
      * @param req Incoming HTTP request.
