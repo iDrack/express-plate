@@ -39,7 +39,7 @@ describe("Health Controller class", () => {
             await healthController.ping(
                 mockRequest as Request,
                 mockResponse as Response,
-                mockNext
+                mockNext,
             );
 
             // Assert
@@ -64,7 +64,7 @@ describe("Health Controller class", () => {
             await healthController.ping(
                 mockRequest as Request,
                 mockResponse as Response,
-                mockNext
+                mockNext,
             );
 
             // Assert
@@ -82,7 +82,7 @@ describe("Health Controller class", () => {
             await healthController.ping(
                 mockRequest as Request,
                 mockResponse as Response,
-                mockNext
+                mockNext,
             );
 
             // Assert
@@ -104,7 +104,7 @@ describe("Health Controller class", () => {
             await healthController.isAlive(
                 mockRequest as Request,
                 mockResponse as Response,
-                mockNext
+                mockNext,
             );
 
             //Assert
@@ -121,7 +121,7 @@ describe("Health Controller class", () => {
             await healthController.isAlive(
                 mockRequest as Request,
                 mockResponse as Response,
-                mockNext
+                mockNext,
             );
 
             //Assert
@@ -142,7 +142,7 @@ describe("Health Controller class", () => {
             await healthController.isAlive(
                 mockRequest as Request,
                 mockResponse as Response,
-                mockNext
+                mockNext,
             );
 
             // Assert
@@ -150,27 +150,20 @@ describe("Health Controller class", () => {
         });
     });
 
-    describe("isReady", () => {
+    describe("isDBReady", () => {
         it("should return status 200 with 'ready' when database is healthy", async () => {
             // Arrange
-            const mockDbCheck = {
-                status: HealthStatus.HEALTHY,
-                responseTime: 50,
-                message: "Connection successful.",
-            };
-            jest.spyOn(healthService, "checkDatabase").mockResolvedValue(
-                mockDbCheck
-            );
+            jest.spyOn(healthService, "pingDB").mockResolvedValue(true);
 
             // Act
-            await healthController.isReady(
+            await healthController.isDBReady(
                 mockRequest as Request,
                 mockResponse as Response,
-                mockNext
+                mockNext,
             );
 
             // Assert
-            expect(healthService.checkDatabase).toHaveBeenCalled();
+            expect(healthService.pingDB).toHaveBeenCalled();
             expect(mockResponse.status).toHaveBeenCalledWith(200);
             expect(mockResponse.json).toHaveBeenCalledWith({
                 status: "ready",
@@ -184,55 +177,17 @@ describe("Health Controller class", () => {
 
         it("should return status 503 with 'not_ready' when database is unhealthy", async () => {
             // Arrange
-            const mockDbCheck = {
-                status: HealthStatus.UNHEALTHY,
-                responseTime: 150,
-                message: "Connection failed.",
-            };
-            jest.spyOn(healthService, "checkDatabase").mockResolvedValue(
-                mockDbCheck
-            );
+            jest.spyOn(healthService, "pingDB").mockResolvedValue(false);
 
             // Act
-            await healthController.isReady(
+            await healthController.isDBReady(
                 mockRequest as Request,
                 mockResponse as Response,
-                mockNext
+                mockNext,
             );
 
             // Assert
-            expect(healthService.checkDatabase).toHaveBeenCalled();
-            expect(mockResponse.status).toHaveBeenCalledWith(503);
-            expect(mockResponse.json).toHaveBeenCalledWith({
-                status: "not_ready",
-                timestamp: expect.any(String),
-                dependencies: {
-                    database: false,
-                },
-            });
-            expect(mockNext).not.toHaveBeenCalled();
-        });
-
-        it("should return status 503 with 'not_ready' when database is degraded", async () => {
-            // Arrange
-            const mockDbCheck = {
-                status: HealthStatus.DEGRADED,
-                responseTime: 1200,
-                message: "Slow response time.",
-            };
-            jest.spyOn(healthService, "checkDatabase").mockResolvedValue(
-                mockDbCheck
-            );
-
-            // Act
-            await healthController.isReady(
-                mockRequest as Request,
-                mockResponse as Response,
-                mockNext
-            );
-
-            // Assert
-            expect(healthService.checkDatabase).toHaveBeenCalled();
+            expect(healthService.pingDB).toHaveBeenCalled();
             expect(mockResponse.status).toHaveBeenCalledWith(503);
             expect(mockResponse.json).toHaveBeenCalledWith({
                 status: "not_ready",
@@ -247,19 +202,17 @@ describe("Health Controller class", () => {
         it("should return status 503 when database check throws an error", async () => {
             // Arrange
             const mockError = new Error("Database connection failed");
-            jest.spyOn(healthService, "checkDatabase").mockRejectedValue(
-                mockError
-            );
+            jest.spyOn(healthService, "pingDB").mockRejectedValue(mockError);
 
             // Act
-            await healthController.isReady(
+            await healthController.isDBReady(
                 mockRequest as Request,
                 mockResponse as Response,
-                mockNext
+                mockNext,
             );
 
             // Assert
-            expect(healthService.checkDatabase).toHaveBeenCalled();
+            expect(healthService.pingDB).toHaveBeenCalled();
             expect(mockResponse.status).toHaveBeenCalledWith(503);
             expect(mockResponse.json).toHaveBeenCalledWith({
                 status: "not_ready",
@@ -273,20 +226,13 @@ describe("Health Controller class", () => {
 
         it("should return a valid ISO timestamp when ready", async () => {
             // Arrange
-            const mockDbCheck = {
-                status: HealthStatus.HEALTHY,
-                responseTime: 50,
-                message: "Connection successful.",
-            };
-            jest.spyOn(healthService, "checkDatabase").mockResolvedValue(
-                mockDbCheck
-            );
+            jest.spyOn(healthService, "pingDB").mockResolvedValue(true);
 
             // Act
-            await healthController.isReady(
+            await healthController.isDBReady(
                 mockRequest as Request,
                 mockResponse as Response,
-                mockNext
+                mockNext,
             );
 
             // Assert
@@ -299,15 +245,300 @@ describe("Health Controller class", () => {
         it("should return a valid ISO timestamp when not ready", async () => {
             // Arrange
             const mockError = new Error("Database error");
-            jest.spyOn(healthService, "checkDatabase").mockRejectedValue(
-                mockError
+            jest.spyOn(healthService, "pingDB").mockRejectedValue(mockError);
+
+            // Act
+            await healthController.isDBReady(
+                mockRequest as Request,
+                mockResponse as Response,
+                mockNext,
             );
+
+            // Assert
+            const jsonCall = (mockResponse.json as jest.Mock).mock.calls[0][0];
+            const timestamp = jsonCall.timestamp;
+            expect(timestamp).toBeTruthy();
+            expect(new Date(timestamp).toISOString()).toBe(timestamp);
+        });
+    });
+
+    describe("isRedisReady", () => {
+        it("should return status 200 with 'ready' when Redis is available", async () => {
+            // Arrange
+            jest.spyOn(healthService, "pingRedis").mockResolvedValue(true);
+
+            // Act
+            await healthController.isRedisReady(
+                mockRequest as Request,
+                mockResponse as Response,
+                mockNext,
+            );
+
+            // Assert
+            expect(healthService.pingRedis).toHaveBeenCalled();
+            expect(mockResponse.status).toHaveBeenCalledWith(200);
+            expect(mockResponse.json).toHaveBeenCalledWith({
+                status: "ready",
+                timestamp: expect.any(String),
+                dependencies: {
+                    redis: true,
+                },
+            });
+            expect(mockNext).not.toHaveBeenCalled();
+        });
+
+        it("should return status 503 with 'not_ready' when Redis is unavailable", async () => {
+            // Arrange
+            jest.spyOn(healthService, "pingRedis").mockResolvedValue(false);
+
+            // Act
+            await healthController.isRedisReady(
+                mockRequest as Request,
+                mockResponse as Response,
+                mockNext,
+            );
+
+            // Assert
+            expect(healthService.pingRedis).toHaveBeenCalled();
+            expect(mockResponse.status).toHaveBeenCalledWith(503);
+            expect(mockResponse.json).toHaveBeenCalledWith({
+                status: "not_ready",
+                timestamp: expect.any(String),
+                dependencies: {
+                    redis: false,
+                },
+            });
+            expect(mockNext).not.toHaveBeenCalled();
+        });
+
+        it("should return status 503 when Redis check throws an error", async () => {
+            // Arrange
+            const mockError = new Error("Redis connection failed");
+            jest.spyOn(healthService, "pingRedis").mockRejectedValue(mockError);
+
+            // Act
+            await healthController.isRedisReady(
+                mockRequest as Request,
+                mockResponse as Response,
+                mockNext,
+            );
+
+            // Assert
+            expect(healthService.pingRedis).toHaveBeenCalled();
+            expect(mockResponse.status).toHaveBeenCalledWith(503);
+            expect(mockResponse.json).toHaveBeenCalledWith({
+                status: "not_ready",
+                timestamp: expect.any(String),
+                dependencies: {
+                    redis: false,
+                },
+            });
+            expect(mockNext).not.toHaveBeenCalled();
+        });
+
+        it("should return a valid ISO timestamp when ready", async () => {
+            // Arrange
+            jest.spyOn(healthService, "pingRedis").mockResolvedValue(true);
+
+            // Act
+            await healthController.isRedisReady(
+                mockRequest as Request,
+                mockResponse as Response,
+                mockNext,
+            );
+
+            // Assert
+            const jsonCall = (mockResponse.json as jest.Mock).mock.calls[0][0];
+            const timestamp = jsonCall.timestamp;
+            expect(timestamp).toBeTruthy();
+            expect(new Date(timestamp).toISOString()).toBe(timestamp);
+        });
+
+        it("should return a valid ISO timestamp when not ready", async () => {
+            // Arrange
+            const mockError = new Error("Redis error");
+            jest.spyOn(healthService, "pingRedis").mockRejectedValue(mockError);
+
+            // Act
+            await healthController.isRedisReady(
+                mockRequest as Request,
+                mockResponse as Response,
+                mockNext,
+            );
+
+            // Assert
+            const jsonCall = (mockResponse.json as jest.Mock).mock.calls[0][0];
+            const timestamp = jsonCall.timestamp;
+            expect(timestamp).toBeTruthy();
+            expect(new Date(timestamp).toISOString()).toBe(timestamp);
+        });
+    });
+
+    describe("isReady", () => {
+        it("should return status 200 with 'ready' when both database and Redis are ready", async () => {
+            // Arrange
+            jest.spyOn(healthService, "pingDB").mockResolvedValue(true);
+            jest.spyOn(healthService, "pingRedis").mockResolvedValue(true);
 
             // Act
             await healthController.isReady(
                 mockRequest as Request,
                 mockResponse as Response,
-                mockNext
+                mockNext,
+            );
+
+            // Assert
+            expect(healthService.pingDB).toHaveBeenCalled();
+            expect(healthService.pingRedis).toHaveBeenCalled();
+            expect(mockResponse.status).toHaveBeenCalledWith(200);
+            expect(mockResponse.json).toHaveBeenCalledWith({
+                status: "ready",
+                timestamp: expect.any(String),
+                dependencies: {
+                    database: true,
+                    redis: true,
+                },
+            });
+            expect(mockNext).not.toHaveBeenCalled();
+        });
+
+        it("should return status 503 with 'not_ready' when database is not ready", async () => {
+            // Arrange
+            jest.spyOn(healthService, "pingDB").mockResolvedValue(false);
+            jest.spyOn(healthService, "pingRedis").mockResolvedValue(true);
+
+            // Act
+            await healthController.isReady(
+                mockRequest as Request,
+                mockResponse as Response,
+                mockNext,
+            );
+
+            // Assert
+            expect(healthService.pingDB).toHaveBeenCalled();
+            expect(healthService.pingRedis).toHaveBeenCalled();
+            expect(mockResponse.status).toHaveBeenCalledWith(503);
+            expect(mockResponse.json).toHaveBeenCalledWith({
+                status: "not_ready",
+                timestamp: expect.any(String),
+                dependencies: {
+                    database: false,
+                    redis: true,
+                },
+            });
+            expect(mockNext).not.toHaveBeenCalled();
+        });
+
+        it("should return status 503 with 'not_ready' when Redis is not ready", async () => {
+            // Arrange
+            jest.spyOn(healthService, "pingDB").mockResolvedValue(true);
+            jest.spyOn(healthService, "pingRedis").mockResolvedValue(false);
+
+            // Act
+            await healthController.isReady(
+                mockRequest as Request,
+                mockResponse as Response,
+                mockNext,
+            );
+
+            // Assert
+            expect(healthService.pingDB).toHaveBeenCalled();
+            expect(healthService.pingRedis).toHaveBeenCalled();
+            expect(mockResponse.status).toHaveBeenCalledWith(200);
+            expect(mockResponse.json).toHaveBeenCalledWith({
+                status: "not_ready",
+                timestamp: expect.any(String),
+                dependencies: {
+                    database: true,
+                    redis: false,
+                },
+            });
+            expect(mockNext).not.toHaveBeenCalled();
+        });
+
+        it("should return status 503 with 'not_ready' when both database and Redis are not ready", async () => {
+            // Arrange
+            jest.spyOn(healthService, "pingDB").mockResolvedValue(false);
+            jest.spyOn(healthService, "pingRedis").mockResolvedValue(false);
+
+            // Act
+            await healthController.isReady(
+                mockRequest as Request,
+                mockResponse as Response,
+                mockNext,
+            );
+
+            // Assert
+            expect(healthService.pingDB).toHaveBeenCalled();
+            expect(healthService.pingRedis).toHaveBeenCalled();
+            expect(mockResponse.status).toHaveBeenCalledWith(503);
+            expect(mockResponse.json).toHaveBeenCalledWith({
+                status: "not_ready",
+                timestamp: expect.any(String),
+                dependencies: {
+                    database: false,
+                    redis: false,
+                },
+            });
+            expect(mockNext).not.toHaveBeenCalled();
+        });
+
+        it("should return status 503 when an error occurs during checks", async () => {
+            // Arrange
+            const mockError = new Error("Connection error");
+            jest.spyOn(healthService, "pingDB").mockRejectedValue(mockError);
+            jest.spyOn(healthService, "pingRedis").mockRejectedValue(mockError);
+
+            // Act
+            await healthController.isReady(
+                mockRequest as Request,
+                mockResponse as Response,
+                mockNext,
+            );
+
+            // Assert
+            expect(mockResponse.status).toHaveBeenCalledWith(503);
+            expect(mockResponse.json).toHaveBeenCalledWith({
+                status: "not_ready",
+                timestamp: expect.any(String),
+                dependencies: {
+                    database: false,
+                    redis: false,
+                },
+            });
+            expect(mockNext).not.toHaveBeenCalled();
+        });
+
+        it("should return a valid ISO timestamp when ready", async () => {
+            // Arrange
+            jest.spyOn(healthService, "pingDB").mockResolvedValue(true);
+            jest.spyOn(healthService, "pingRedis").mockResolvedValue(true);
+
+            // Act
+            await healthController.isReady(
+                mockRequest as Request,
+                mockResponse as Response,
+                mockNext,
+            );
+
+            // Assert
+            const jsonCall = (mockResponse.json as jest.Mock).mock.calls[0][0];
+            const timestamp = jsonCall.timestamp;
+            expect(timestamp).toBeTruthy();
+            expect(new Date(timestamp).toISOString()).toBe(timestamp);
+        });
+
+        it("should return a valid ISO timestamp when not ready", async () => {
+            // Arrange
+            const mockError = new Error("Connection error");
+            jest.spyOn(healthService, "pingDB").mockRejectedValue(mockError);
+            jest.spyOn(healthService, "pingRedis").mockRejectedValue(mockError);
+
+            // Act
+            await healthController.isReady(
+                mockRequest as Request,
+                mockResponse as Response,
+                mockNext,
             );
 
             // Assert
@@ -337,6 +568,11 @@ describe("Health Controller class", () => {
                 responseTime: 50,
                 message: "Connection successful.",
             };
+            const mockRedisCheck = {
+                status: HealthStatus.HEALTHY,
+                responseTime: 5,
+                message: "Connection successful.",
+            };
             const mockMemoryCheck = {
                 status: HealthStatus.HEALTHY,
                 responseTime: 0,
@@ -345,13 +581,16 @@ describe("Health Controller class", () => {
             const mockUptime = 12345;
 
             jest.spyOn(healthService, "checkDatabase").mockResolvedValue(
-                mockDbCheck
+                mockDbCheck,
+            );
+            jest.spyOn(healthService, "checkRedis").mockResolvedValue(
+                mockRedisCheck,
             );
             jest.spyOn(healthService, "checkMemory").mockReturnValue(
-                mockMemoryCheck
+                mockMemoryCheck,
             );
             jest.spyOn(healthService, "checkGlobalStatus").mockReturnValue(
-                HealthStatus.HEALTHY
+                HealthStatus.HEALTHY,
             );
             jest.spyOn(healthService, "getUptime").mockReturnValue(mockUptime);
 
@@ -361,14 +600,16 @@ describe("Health Controller class", () => {
             await healthController.healthCheck(
                 mockRequest as Request,
                 mockResponse as Response,
-                mockNext
+                mockNext,
             );
 
             // Assert
             expect(healthService.checkDatabase).toHaveBeenCalled();
+            expect(healthService.checkRedis).toHaveBeenCalled();
             expect(healthService.checkMemory).toHaveBeenCalled();
             expect(healthService.checkGlobalStatus).toHaveBeenCalledWith({
                 database: mockDbCheck,
+                redis: mockRedisCheck,
                 memory: mockMemoryCheck,
             });
             expect(mockResponse.status).toHaveBeenCalledWith(200);
@@ -378,6 +619,7 @@ describe("Health Controller class", () => {
                 uptime: mockUptime,
                 checks: {
                     database: mockDbCheck,
+                    redis: mockRedisCheck,
                     memory: mockMemoryCheck,
                 },
                 version: expect.any(String),
@@ -392,6 +634,11 @@ describe("Health Controller class", () => {
                 responseTime: 5000,
                 message: "Connection failed.",
             };
+            const mockRedisCheck = {
+                status: HealthStatus.HEALTHY,
+                responseTime: 5,
+                message: "Connection successful.",
+            };
             const mockMemoryCheck = {
                 status: HealthStatus.HEALTHY,
                 responseTime: 0,
@@ -400,13 +647,16 @@ describe("Health Controller class", () => {
             const mockUptime = 12345;
 
             jest.spyOn(healthService, "checkDatabase").mockResolvedValue(
-                mockDbCheck
+                mockDbCheck,
+            );
+            jest.spyOn(healthService, "checkRedis").mockResolvedValue(
+                mockRedisCheck,
             );
             jest.spyOn(healthService, "checkMemory").mockReturnValue(
-                mockMemoryCheck
+                mockMemoryCheck,
             );
             jest.spyOn(healthService, "checkGlobalStatus").mockReturnValue(
-                HealthStatus.UNHEALTHY
+                HealthStatus.UNHEALTHY,
             );
             jest.spyOn(healthService, "getUptime").mockReturnValue(mockUptime);
 
@@ -414,7 +664,7 @@ describe("Health Controller class", () => {
             await healthController.healthCheck(
                 mockRequest as Request,
                 mockResponse as Response,
-                mockNext
+                mockNext,
             );
 
             // Assert
@@ -425,6 +675,7 @@ describe("Health Controller class", () => {
                 uptime: mockUptime,
                 checks: {
                     database: mockDbCheck,
+                    redis: mockRedisCheck,
                     memory: mockMemoryCheck,
                 },
                 version: expect.any(String),
@@ -439,6 +690,11 @@ describe("Health Controller class", () => {
                 responseTime: 1500,
                 message: "Slow response time.",
             };
+            const mockRedisCheck = {
+                status: HealthStatus.HEALTHY,
+                responseTime: 5,
+                message: "Connection successful.",
+            };
             const mockMemoryCheck = {
                 status: HealthStatus.HEALTHY,
                 responseTime: 0,
@@ -447,13 +703,16 @@ describe("Health Controller class", () => {
             const mockUptime = 12345;
 
             jest.spyOn(healthService, "checkDatabase").mockResolvedValue(
-                mockDbCheck
+                mockDbCheck,
+            );
+            jest.spyOn(healthService, "checkRedis").mockResolvedValue(
+                mockRedisCheck,
             );
             jest.spyOn(healthService, "checkMemory").mockReturnValue(
-                mockMemoryCheck
+                mockMemoryCheck,
             );
             jest.spyOn(healthService, "checkGlobalStatus").mockReturnValue(
-                HealthStatus.DEGRADED
+                HealthStatus.DEGRADED,
             );
             jest.spyOn(healthService, "getUptime").mockReturnValue(mockUptime);
 
@@ -461,7 +720,7 @@ describe("Health Controller class", () => {
             await healthController.healthCheck(
                 mockRequest as Request,
                 mockResponse as Response,
-                mockNext
+                mockNext,
             );
 
             // Assert
@@ -472,6 +731,7 @@ describe("Health Controller class", () => {
                 uptime: mockUptime,
                 checks: {
                     database: mockDbCheck,
+                    redis: mockRedisCheck,
                     memory: mockMemoryCheck,
                 },
                 version: expect.any(String),
@@ -483,14 +743,14 @@ describe("Health Controller class", () => {
             // Arrange
             const mockError = new Error("Unexpected error");
             jest.spyOn(healthService, "checkDatabase").mockRejectedValue(
-                mockError
+                mockError,
             );
 
             // Act
             await healthController.healthCheck(
                 mockRequest as Request,
                 mockResponse as Response,
-                mockNext
+                mockNext,
             );
 
             // Assert
@@ -518,13 +778,13 @@ describe("Health Controller class", () => {
             };
 
             jest.spyOn(healthService, "checkDatabase").mockResolvedValue(
-                mockDbCheck
+                mockDbCheck,
             );
             jest.spyOn(healthService, "checkMemory").mockReturnValue(
-                mockMemoryCheck
+                mockMemoryCheck,
             );
             jest.spyOn(healthService, "checkGlobalStatus").mockReturnValue(
-                HealthStatus.HEALTHY
+                HealthStatus.HEALTHY,
             );
             jest.spyOn(healthService, "getUptime").mockReturnValue(12345);
 
@@ -532,7 +792,7 @@ describe("Health Controller class", () => {
             await healthController.healthCheck(
                 mockRequest as Request,
                 mockResponse as Response,
-                mockNext
+                mockNext,
             );
 
             // Assert
@@ -562,7 +822,7 @@ describe("Health Controller class", () => {
                 .spyOn(healthService, "checkMemory")
                 .mockReturnValue(mockMemoryCheck);
             jest.spyOn(healthService, "checkGlobalStatus").mockReturnValue(
-                HealthStatus.HEALTHY
+                HealthStatus.HEALTHY,
             );
             jest.spyOn(healthService, "getUptime").mockReturnValue(12345);
 
@@ -570,7 +830,7 @@ describe("Health Controller class", () => {
             await healthController.healthCheck(
                 mockRequest as Request,
                 mockResponse as Response,
-                mockNext
+                mockNext,
             );
 
             // Assert

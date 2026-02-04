@@ -7,13 +7,13 @@ import {
 import { healthService } from "./health.service.js";
 
 export class HealthController {
-
     constructor() {
         this.ping = this.ping.bind(this);
         this.isAlive = this.isAlive.bind(this);
         this.isReady = this.isReady.bind(this);
         this.healthCheck = this.healthCheck.bind(this);
     }
+    
     /**
      * Simple function to quickly test if the API is up or not.
      * @param req Incoming HTTP request.
@@ -42,7 +42,7 @@ export class HealthController {
     async isAlive(
         req: Request,
         res: Response,
-        next: NextFunction
+        next: NextFunction,
     ): Promise<void> {
         try {
             res.status(200).json({
@@ -54,14 +54,19 @@ export class HealthController {
         }
     }
 
-    async isReady(
+    /**
+     * Check if Postgres database is ready.
+     * @param req Incoming HTTP request.
+     * @param res Response or the incoming HTTP request.
+     * @param next Following function.
+     */
+    async isDBReady(
         req: Request,
         res: Response,
-        next: NextFunction
+        next: NextFunction,
     ): Promise<void> {
         try {
-            const dbCheck = await healthService.checkDatabase();
-            const isDBReady = dbCheck.status === HealthStatus.HEALTHY;
+            const isDBReady = await healthService.pingDB();
 
             const response: ReadinessCheckResponse = {
                 status: isDBReady ? "ready" : "not_ready",
@@ -85,19 +90,102 @@ export class HealthController {
         }
     }
 
+    /**
+     * Check if Redis database is ready.
+     * @param req Incoming HTTP request.
+     * @param res Response or the incoming HTTP request.
+     * @param next Following function.
+     */
+    async isRedisReady(
+        req: Request,
+        res: Response,
+        next: NextFunction,
+    ): Promise<void> {
+        try {
+            const isRedisReady = await healthService.pingRedis();
+
+            const response: ReadinessCheckResponse = {
+                status: isRedisReady ? "ready" : "not_ready",
+                timestamp: new Date().toISOString(),
+                dependencies: {
+                    redis: isRedisReady,
+                },
+            };
+
+            res.status(isRedisReady ? 200 : 503).json(response);
+        } catch (error) {
+            const response: ReadinessCheckResponse = {
+                status: "not_ready",
+                timestamp: new Date().toISOString(),
+                dependencies: {
+                    redis: false,
+                },
+            };
+
+            res.status(503).json(response);
+        }
+    }
+
+    /**
+     * Check if both Redis and Postgres databases are ready.
+     * @param req Incoming HTTP request.
+     * @param res Response or the incoming HTTP request.
+     * @param next Following function.
+     */
+    async isReady(
+        req: Request,
+        res: Response,
+        next: NextFunction,
+    ): Promise<void> {
+        try {
+            const isDBReady = await healthService.pingDB();
+            const isRedisReady = await healthService.pingRedis();
+
+            const response: ReadinessCheckResponse = {
+                status: isDBReady && isRedisReady ? "ready" : "not_ready",
+                timestamp: new Date().toISOString(),
+                dependencies: {
+                    database: isDBReady,
+                    redis: isRedisReady,
+                },
+            };
+
+            res.status(isDBReady ? 200 : 503).json(response);
+        } catch (error) {
+            const response: ReadinessCheckResponse = {
+                status: "not_ready",
+                timestamp: new Date().toISOString(),
+                dependencies: {
+                    database: false,
+                    redis: false,
+                },
+            };
+
+            res.status(503).json(response);
+        }
+    }
+
+    /**
+     * Give a status report on API health.
+     * @param req Incoming HTTP request.
+     * @param res Response or the incoming HTTP request.
+     * @param next Following function.
+     */
     async healthCheck(
         req: Request,
         res: Response,
-        next: NextFunction
+        next: NextFunction,
     ): Promise<void> {
         try {
-            const [dbCheck, memoryCheck] = await Promise.all([
+            const [dbCheck, redisCheck, memoryCheck] = await Promise.all([
                 healthService.checkDatabase(),
+                healthService.checkRedis(),
                 Promise.resolve(healthService.checkMemory()),
             ]);
 
             const checks = {
                 database: dbCheck,
+                redis: redisCheck,
                 memory: memoryCheck,
             };
 
