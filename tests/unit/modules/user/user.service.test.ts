@@ -49,7 +49,7 @@ import { userService } from "../../../../src/modules/user/user.service";
 import { JwtService } from "../../../../src/modules/core/jwt.service";
 import { toRole } from "../../../../src/models/role";
 import { mailService } from "../../../../src/modules/mail/mail.service";
-import redis from "../../../../src/redis";
+import redis from "../../../../src/config/redis";
 
 //const mockUserRepository = mockRepository as any;
 const mockUserRepository = AppDataSource.getRepository(User) as any;

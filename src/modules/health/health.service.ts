@@ -1,7 +1,7 @@
 import type { DataSource } from "typeorm";
 import { AppDataSource } from "../../config/database.js";
 import { HealthStatus, type DependencyCheck } from "./health.types.js";
-import redis from "../../redis.js";
+import redis from "../../config/redis.js";
 
 class HealthService {
     private static instance: HealthService;
@@ -91,7 +91,7 @@ class HealthService {
 
         let status = HealthStatus.HEALTHY;
         let message = `${heapUsedMB}MB / ${heapTotalMB}MB (${percentUsed.toFixed(
-            1
+            1,
         )}%)`;
         if (percentUsed > 80 && percentUsed <= 90) {
             status = HealthStatus.DEGRADED;
@@ -101,7 +101,7 @@ class HealthService {
             status = HealthStatus.UNHEALTHY;
             message += " - Critical memory usage";
         }
-        
+
         return {
             status,
             responseTime: 0,
@@ -113,11 +113,11 @@ class HealthService {
      * Test if redis is available.
      * @returns True if redis is available, False otherwise.
      */
-    async pingRedis(): Promise<boolean>{
+    async pingRedis(): Promise<boolean> {
         try {
             await redis.ping();
             return true;
-        } catch(error) {
+        } catch (error) {
             return false;
         }
     }
@@ -129,42 +129,45 @@ class HealthService {
     async checkRedis(): Promise<DependencyCheck> {
         const startTime = Date.now();
         try {
-            if(!(await this.pingRedis())) {
+            if (!(await this.pingRedis())) {
                 return {
                     status: HealthStatus.UNHEALTHY,
                     responseTime: Date.now() - startTime,
                     message: "Redis connection timeout.",
-                }
+                };
             }
-    
-            const redisStatus =  redis.status;
-            const responseTime = Date.now() - startTime;           
-            if(redisStatus === "ready" && responseTime<1000) {
+
+            const redisStatus = redis.status;
+            const responseTime = Date.now() - startTime;
+            if (redisStatus === "ready" && responseTime < 1000) {
                 return {
                     status: HealthStatus.HEALTHY,
                     responseTime: responseTime,
-                    message: "Connection successful."
-                }
-            } else if(redisStatus === "ready" && responseTime>=1000) {
+                    message: "Connection successful.",
+                };
+            } else if (redisStatus === "ready" && responseTime >= 1000) {
                 return {
                     status: HealthStatus.DEGRADED,
                     responseTime: responseTime,
-                    message: "Slow Response time."
-                }
-            }else if (redisStatus === "connect" || redisStatus === "reconnecting") {
+                    message: "Slow Response time.",
+                };
+            } else if (
+                redisStatus === "connect" ||
+                redisStatus === "reconnecting"
+            ) {
                 return {
                     status: HealthStatus.DEGRADED,
                     responseTime: responseTime,
-                    message: "Redis is reconnecting."
-                }
-            } else{
+                    message: "Redis is reconnecting.",
+                };
+            } else {
                 return {
                     status: HealthStatus.UNHEALTHY,
                     responseTime: responseTime,
                     message: "Couldn't connect to Redis.",
-                }
+                };
             }
-        } catch (error) {            
+        } catch (error) {
             const responseTime = Date.now() - startTime;
             return {
                 status: HealthStatus.UNHEALTHY,
@@ -182,7 +185,7 @@ class HealthService {
      */
     checkGlobalStatus(checks: Record<string, DependencyCheck>): HealthStatus {
         const statuses = Object.values(checks).map((check) => check.status);
-        
+
         if (statuses.some((status) => status === HealthStatus.UNHEALTHY))
             return HealthStatus.UNHEALTHY;
         if (statuses.some((status) => status === HealthStatus.DEGRADED))

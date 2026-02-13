@@ -1,6 +1,6 @@
 // Mock Redis to avoid connection issues during tests
 // Individual tests can override specific methods as needed
-jest.mock("../src/redis.ts", () => {
+jest.mock("../src/config/redis.ts", () => {
     return {
         __esModule: true,
         default: {
