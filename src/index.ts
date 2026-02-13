@@ -10,6 +10,7 @@ import { errorHandler } from "./middlewares/errorHandler.js";
 import { httpLogger } from "./middlewares/httpLogger.js";
 import HealthRoutes from "./modules/health/health.routes.js";
 import UserRoutes from "./modules/user/user.routes.js";
+import FileTransfertRoute from "./modules/transfert/transfert.routes.js";
 
 const app = express();
 dotenv.config({ path: "./.env" });
@@ -32,6 +33,7 @@ if (logger.settings.minLevel <= 1) {
 //Routes
 app.use("/users", UserRoutes);
 app.use("/health", HealthRoutes);
+app.use('/file', FileTransfertRoute)
 
 //Errors handling
 app.use(errorHandler);

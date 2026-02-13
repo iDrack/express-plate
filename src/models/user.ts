@@ -2,11 +2,13 @@ import {
     Column,
     CreateDateColumn,
     Entity,
+    OneToMany,
     PrimaryGeneratedColumn,
     UpdateDateColumn,
 } from "typeorm";
 import { IsEmail, Length } from "class-validator";
-import { Role } from "./role.js";import bcrypt from "bcrypt";
+import { Role } from "./role.js";
+import { FileInfo } from "./fileInfo.js";
 
 @Entity()
 export class User {
@@ -27,6 +29,9 @@ export class User {
 
     @Column({ type: "enum", enum: Role, default: Role.USER })
     role!: Role;
+
+    @OneToMany(() => FileInfo, (fileInfo) => fileInfo.user)
+    files!: FileInfo[]
 
     @CreateDateColumn()
     createdAt!: Date;

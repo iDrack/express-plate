@@ -22,7 +22,7 @@ class UserService {
         return UserService.instance;
     }
 
-    constructor() {
+    private constructor() {
         this.userRepository = AppDataSource.getRepository(User);
         this.passwordRegex =
             /^.*(?=.{8,})(?=.*[a-zA-Z])(?=.*\d)(?=.*[!@#$%&? "]).*$/;
