@@ -129,4 +129,109 @@ router.post(
     controller.uploadMultipleFile,
 );
 
+/**
+ * @swagger
+ * /file/all:
+ *   get:
+ *     summary: Get all files for the authenticated user
+ *     tags: [Transfert]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of files retrieved successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: success
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/FileMetaData'
+ *       401:
+ *         description: Unauthorized.
+ */
+router.get("/all", authenticate, controller.getAllFiles);
+
+/**
+ * @swagger
+ * /file/{id}:
+ *   get:
+ *     summary: Get file information by ID
+ *     tags: [Transfert]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: The file ID
+ *     responses:
+ *       200:
+ *         description: File information retrieved successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: success
+ *                 data:
+ *                   $ref: '#/components/schemas/FileMetaData'
+ *       401:
+ *         description: Unauthorized.
+ *       404:
+ *         description: File not found.
+ *       405:
+ *         description: Invalid file ID.
+ */
+router.get("/:id", authenticate, controller.getFileById);
+
+/**
+ * @swagger
+ * /file/{id}:
+ *   delete:
+ *     summary: Delete a file by ID
+ *     tags: [Transfert]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: The file ID to delete
+ *     responses:
+ *       200:
+ *         description: File deleted successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: success
+ *                 data:
+ *                   type: string
+ *                   example: File with id 42 has been deleted successfully.
+ *       401:
+ *         description: Unauthorized.
+ *       404:
+ *         description: File not found.
+ *       405:
+ *         description: Invalid file ID.
+ */
+router.delete("/:id", authenticate, controller.deleteFileById);
+
+router.get("/download/:id", authenticate, )
+
 export default router;
