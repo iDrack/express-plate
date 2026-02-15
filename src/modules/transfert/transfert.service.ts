@@ -21,6 +21,34 @@ class TransfertService {
         this.fileInfoRepository = AppDataSource.getRepository(FileInfo);
     }
 
+        /**
+     * Get file info from the database.
+     * @param fileId Id for the file being requested.
+     * @returns Requested file if exists.
+     */
+    async getFileById(fileId: number): Promise<FileInfo> {
+        const file = await this.fileInfoRepository.findOne({
+            where: {
+                id: fileId,
+            },
+            relations: ['user']
+        });
+
+        if (file === null || file === undefined) {
+            throw new AppError("File is missing.", 404);
+        }
+
+        return file;
+    }
+
+    /**
+     * Count number of files.
+     * @returns NUmber of files.
+     */
+    async countNbFiles(): Promise<number> {
+        return await this.fileInfoRepository.count();
+    }
+
     /**
      * Save a copy of the metadata and its owner of a file being transferred.
      * @param file Multer file being transferred.
@@ -64,15 +92,19 @@ class TransfertService {
     /**
      * Retrieve every fiel metadata owned by a specific user.
      * @param userId User id.
+     * @param offset NUmber of files to skip over.
+     * @param limit Limit of files to return.
      * @returns Array of sanitized metadata of files.
      */
-    async getFilesByUserId(userId: number): Promise<Array<FileMetaData>> {
+    async getFilesByUserId(userId: number, offset: number, limit: number): Promise<Array<FileMetaData>> {
         const filesInfo = await this.fileInfoRepository.find({
             where: {
                 user: {
                     id: userId,
                 },
             },
+            skip: offset,
+            take: limit,
             relations: ['user'],
         });
 
@@ -92,26 +124,6 @@ class TransfertService {
             });
         });
         return filesMeta;
-    }
-
-    /**
-     * Get file info from the database.
-     * @param fileId Id for the file being requested.
-     * @returns Requested file if exists.
-     */
-    async getFileById(fileId: number): Promise<FileInfo> {
-        const file = await this.fileInfoRepository.findOne({
-            where: {
-                id: fileId,
-            },
-            relations: ['user']
-        });
-
-        if (file === null || file === undefined) {
-            throw new AppError("File is missing.", 404);
-        }
-
-        return file;
     }
 
     /**

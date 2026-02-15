@@ -133,13 +133,21 @@ router.post(
  * @swagger
  * /file/all:
  *   get:
- *     summary: Get all files for the authenticated user
+ *     summary: Get all files for the authenticated user (paginated)
  *     tags: [Transfert]
  *     security:
  *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *         required: false
+ *         description: Page number (default 1)
  *     responses:
  *       200:
- *         description: List of files retrieved successfully.
+ *         description: List of files retrieved successfully with pagination metadata.
  *         content:
  *           application/json:
  *             schema:
@@ -152,6 +160,24 @@ router.post(
  *                   type: array
  *                   items:
  *                     $ref: '#/components/schemas/FileMetaData'
+ *                 page:
+ *                   type: integer
+ *                   example: 1
+ *                 totalPages:
+ *                   type: integer
+ *                   example: 5
+ *                 limit:
+ *                   type: integer
+ *                   example: 20
+ *                 totalItems:
+ *                   type: integer
+ *                   example: 20
+ *                 prevPage:
+ *                   type: integer
+ *                   example: 0
+ *                 nextPage:
+ *                   type: integer
+ *                   example: 2
  *       401:
  *         description: Unauthorized.
  */
@@ -232,6 +258,8 @@ router.get("/:id", authenticate, controller.getFileById);
  */
 router.delete("/:id", authenticate, controller.deleteFileById);
 
-router.get("/download/:id", authenticate, )
+router.get("/download/:id", authenticate);
+
+router.get("/get/:id", authenticate);
 
 export default router;
