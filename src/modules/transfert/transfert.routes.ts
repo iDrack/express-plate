@@ -258,8 +258,69 @@ router.get("/:id", authenticate, controller.getFileById);
  */
 router.delete("/:id", authenticate, controller.deleteFileById);
 
-router.get("/download/:id", authenticate);
 
-router.get("/get/:id", authenticate);
+/**
+ * @swagger
+ * /file/download/{id}:
+ *   get:
+ *     summary: Download a file by ID
+ *     tags: [Transfert]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: The file ID to download
+ *     responses:
+ *       200:
+ *         description: File downloaded successfully.
+ *         content:
+ *           application/octet-stream:
+ *             schema:
+ *               type: string
+ *               format: binary
+ *       401:
+ *         description: Unauthorized.
+ *       404:
+ *         description: File not found.
+ *       405:
+ *         description: Invalid file ID.
+ */
+router.get("/download/:id", authenticate, controller.DownloadFileById);
+
+/**
+ * @swagger
+ * /file/get/{id}:
+ *   get:
+ *     summary: Stream a file by ID
+ *     tags: [Transfert]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: The file ID to stream
+ *     responses:
+ *       200:
+ *         description: File streamed successfully.
+ *         content:
+ *           application/octet-stream:
+ *             schema:
+ *               type: string
+ *               format: binary
+ *       401:
+ *         description: Unauthorized.
+ *       404:
+ *         description: File not found.
+ *       405:
+ *         description: Invalid file ID.
+ */
+router.get("/get/:id", authenticate, controller.StreamFileById);
 
 export default router;

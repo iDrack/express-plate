@@ -21,7 +21,7 @@ class TransfertService {
         this.fileInfoRepository = AppDataSource.getRepository(FileInfo);
     }
 
-        /**
+    /**
      * Get file info from the database.
      * @param fileId Id for the file being requested.
      * @returns Requested file if exists.
@@ -31,7 +31,7 @@ class TransfertService {
             where: {
                 id: fileId,
             },
-            relations: ['user']
+            relations: ["user"],
         });
 
         if (file === null || file === undefined) {
@@ -96,7 +96,11 @@ class TransfertService {
      * @param limit Limit of files to return.
      * @returns Array of sanitized metadata of files.
      */
-    async getFilesByUserId(userId: number, offset: number, limit: number): Promise<Array<FileMetaData>> {
+    async getFilesByUserId(
+        userId: number,
+        offset: number,
+        limit: number,
+    ): Promise<Array<FileMetaData>> {
         const filesInfo = await this.fileInfoRepository.find({
             where: {
                 user: {
@@ -105,7 +109,7 @@ class TransfertService {
             },
             skip: offset,
             take: limit,
-            relations: ['user'],
+            relations: ["user"],
         });
 
         if (filesInfo.length === 0) {
@@ -137,7 +141,7 @@ class TransfertService {
         userId: number,
     ): Promise<FileMetaData> {
         try {
-            const file = await this.getFileById(fileId);            
+            const file = await this.getFileById(fileId);
 
             if (file.user.id !== userId) {
                 throw new AppError(
@@ -158,6 +162,50 @@ class TransfertService {
         } catch (error) {
             throw error;
         }
+    }
+
+    /**
+     * Get the path for a requested file for a user.
+     * @param fileId Id of the file being requested.
+     * @param userId Id of the file owner.
+     * @returns Absolute path for the requested file.
+     */
+    async getFilePathByIdByUser(
+        fileId: number,
+        userId: number,
+    ): Promise<string> {
+        const file = await this.getFileById(fileId);
+
+        if (file.user.id !== userId) {
+            throw new AppError(
+                "You do not have the rights to download this file.",
+                403,
+            );
+        }
+
+        return file.path;
+    }
+
+    /**
+     * Get the original name for a requested file for a user.
+     * @param fileId Id of the file being requested.
+     * @param userId Id of the file owner.
+     * @returns Original name for the requested file.
+     */
+    async getFileOriginalNameByIdByUser(
+        fileId: number,
+        userId: number,
+    ): Promise<string> {
+        const file = await this.getFileById(fileId);
+
+        if (file.user.id !== userId) {
+            throw new AppError(
+                "You do not have the rights to view this file.",
+                403,
+            );
+        }
+
+        return file.originalName;
     }
 
     /**

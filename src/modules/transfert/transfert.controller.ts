@@ -2,6 +2,7 @@ import type { Request, Response, NextFunction } from "express";
 import { AppError } from "../../middlewares/errorHandler.js";
 import { transfertService } from "./transfert.service.js";
 import type { FileMetaData, FilePageMetaData } from "./transfert.types.js";
+import path from "path";
 
 export class TransfertController {
     limit: number;
@@ -13,6 +14,8 @@ export class TransfertController {
         this.getAllFiles = this.getAllFiles.bind(this);
         this.getFileById = this.getAllFiles.bind(this);
         this.getPageMetaData = this.getPageMetaData.bind(this);
+        this.DownloadFileById = this.DownloadFileById.bind(this);
+        this.StreamFileById = this.StreamFileById.bind(this);
     }
 
     /**
@@ -167,6 +170,94 @@ export class TransfertController {
             res.status(200).json({
                 status: "success",
                 data: result,
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    /**
+     * Send a file by its id, the authenticated user must own said file. Cache is set for 1h.
+     * @param req Incoming HTTP request.
+     * @param res Response or the incoming HTTP request.
+     * @param next Following function.
+     */
+    async StreamFileById(
+        req: Request,
+        res: Response,
+        next: NextFunction,
+    ): Promise<void> {
+        try {
+            if (req.params.id === undefined) {
+                throw new AppError("File id is missing.", 404);
+            }
+            if (parseInt(req.params?.id) < 0) {
+                throw new AppError("File id is invalid.", 405);
+            }
+
+            if (req.user.id < 0) {
+                throw new AppError("User id is invalid.", 405);
+            }
+
+            const filePath = await transfertService.getFilePathByIdByUser(
+                parseInt(req.params.id),
+                req.user.id,
+            );
+            const file = path.resolve(filePath);
+
+            res.sendFile(file, {
+                headers: {
+                    "Cache-Control": "private, max-age=3600",
+                },
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    /**
+     * Download a file by its id, the authenticated user must own said file. Cache is set for 1h.
+     * @param req Incoming HTTP request.
+     * @param res Response or the incoming HTTP request.
+     * @param next Following function.
+     */
+    async DownloadFileById(
+        req: Request,
+        res: Response,
+        next: NextFunction,
+    ): Promise<void> {
+        try {
+            if (req.params.id === undefined) {
+                throw new AppError("File id is missing.", 404);
+            }
+            if (parseInt(req.params?.id) < 0) {
+                throw new AppError("File id is invalid.", 405);
+            }
+
+            if (req.user.id < 0) {
+                throw new AppError("User id is invalid.", 405);
+            }
+
+            const { fileId, userId } = {
+                fileId: parseInt(req.params.id),
+                userId: req.user.id,
+            };
+
+            const filePath = await transfertService.getFilePathByIdByUser(
+                fileId,
+                userId,
+            );
+            const file = path.resolve(filePath);
+            const originalName =
+                await transfertService.getFileOriginalNameByIdByUser(
+                    fileId,
+                    userId,
+                );
+
+            res.download(file, originalName, {
+                headers: {
+                    "Cache-Control": "private, max-age=3600",
+                },
             });
         } catch (error) {
             next(error);
