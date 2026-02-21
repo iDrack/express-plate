@@ -2,30 +2,11 @@ import { Request, Response, NextFunction } from "express";
 import { UserController } from "../../../../src/modules/user/user.controller";
 import { AuthRequest } from "../../../../src/middlewares/authMiddleware";
 import { Role } from "../../../../src/models/role";
-import { userService } from "../../../../src/modules/user/user.service";
+import { UserService } from "../../../../src/modules/user/user.service";
 import { AppError } from "../../../../src/middlewares/errorHandler";
 import { JwtService } from "../../../../src/modules/core/jwt.service";
+import { MockContainer } from "../../../utils/mockContainer";
 
-// Mock userService
-jest.mock("../../../../src/modules/user/user.service", () => ({
-    userService: {
-        login: jest.fn(),
-        getUserByEmail: jest.fn(),
-        getUserByName: jest.fn(),
-        createUser: jest.fn(),
-        testCredentials: jest.fn(),
-        getUserById: jest.fn(),
-        getAllUsers: jest.fn(),
-        updateUser: jest.fn(),
-        updatePassword: jest.fn(),
-        deleteUser: jest.fn(),
-        deleteUserById: jest.fn(),
-        passwordResetRequest: jest.fn(),
-        passwordReset: jest.fn(),
-    },
-}));
-
-// Mock JwtService
 jest.mock("../../../../src/modules/core/jwt.service", () => ({
     JwtService: {
         verifyRefreshToken: jest.fn(),
@@ -40,8 +21,12 @@ describe("User Controller class", () => {
     let mockNext: NextFunction;
     let mockUserReq: { id: number; name: string; role: string };
     let testUser: any;
+    let mockUserService: jest.Mocked<UserService>;
 
     beforeEach(() => {
+        mockUserService =
+            MockContainer.createMockService<UserService>(UserService);
+
         userController = new UserController();
         mockUserReq = {
             id: 1,
@@ -72,7 +57,7 @@ describe("User Controller class", () => {
     });
 
     afterEach(() => {
-        jest.clearAllMocks();
+        MockContainer.reset();
     });
 
     describe("prepareTokens", () => {
@@ -81,7 +66,7 @@ describe("User Controller class", () => {
             const mockAccessToken = "mock-access-token";
             const mockRefreshToken = "mock-refresh-token";
 
-            (userService.login as jest.Mock).mockReturnValue({
+            (mockUserService.login as jest.Mock).mockReturnValue({
                 accessToken: mockAccessToken,
                 refreshToken: mockRefreshToken,
             });
@@ -94,7 +79,7 @@ describe("User Controller class", () => {
             );
 
             // Assert
-            expect(userService.login).toHaveBeenCalledWith(testUser);
+            expect(mockUserService.login).toHaveBeenCalledWith(testUser);
             expect(mockResponse.cookie).toHaveBeenCalledWith(
                 "refreshToken",
                 mockRefreshToken,
@@ -125,7 +110,7 @@ describe("User Controller class", () => {
             const mockAccessToken = "mock-access-token";
             const mockRefreshToken = "mock-refresh-token";
 
-            (userService.login as jest.Mock).mockReturnValue({
+            (mockUserService.login as jest.Mock).mockReturnValue({
                 accessToken: mockAccessToken,
                 refreshToken: mockRefreshToken,
             });
@@ -143,7 +128,7 @@ describe("User Controller class", () => {
 
         it("should include user id, name and role in response", async () => {
             // Arrange
-            (userService.login as jest.Mock).mockReturnValue({
+            (mockUserService.login as jest.Mock).mockReturnValue({
                 accessToken: "token1",
                 refreshToken: "token2",
             });
@@ -177,10 +162,16 @@ describe("User Controller class", () => {
                 password: "Password123!",
             };
 
-            (userService.getUserByEmail as jest.Mock).mockResolvedValue(null);
-            (userService.getUserByName as jest.Mock).mockResolvedValue(null);
-            (userService.createUser as jest.Mock).mockResolvedValue(testUser);
-            (userService.login as jest.Mock).mockReturnValue({
+            (mockUserService.getUserByEmail as jest.Mock).mockResolvedValue(
+                null,
+            );
+            (mockUserService.getUserByName as jest.Mock).mockResolvedValue(
+                null,
+            );
+            (mockUserService.createUser as jest.Mock).mockResolvedValue(
+                testUser,
+            );
+            (mockUserService.login as jest.Mock).mockReturnValue({
                 accessToken: mockAccessToken,
                 refreshToken: mockRefreshToken,
             });
@@ -193,11 +184,13 @@ describe("User Controller class", () => {
             );
 
             // Assert
-            expect(userService.getUserByEmail).toHaveBeenCalledWith(
+            expect(mockUserService.getUserByEmail).toHaveBeenCalledWith(
                 "new@test.com",
             );
-            expect(userService.getUserByName).toHaveBeenCalledWith("newUser");
-            expect(userService.createUser).toHaveBeenCalledWith(
+            expect(mockUserService.getUserByName).toHaveBeenCalledWith(
+                "newUser",
+            );
+            expect(mockUserService.createUser).toHaveBeenCalledWith(
                 "newUser",
                 "new@test.com",
                 "Password123!",
@@ -301,7 +294,7 @@ describe("User Controller class", () => {
                 email: "existing@test.com",
             };
 
-            (userService.getUserByEmail as jest.Mock).mockResolvedValue(
+            (mockUserService.getUserByEmail as jest.Mock).mockResolvedValue(
                 existingUser,
             );
 
@@ -335,8 +328,10 @@ describe("User Controller class", () => {
                 name: "existingUser",
             };
 
-            (userService.getUserByEmail as jest.Mock).mockResolvedValue(null);
-            (userService.getUserByName as jest.Mock).mockResolvedValue(
+            (mockUserService.getUserByEmail as jest.Mock).mockResolvedValue(
+                null,
+            );
+            (mockUserService.getUserByName as jest.Mock).mockResolvedValue(
                 existingUser,
             );
 
@@ -366,12 +361,16 @@ describe("User Controller class", () => {
             };
 
             const notFoundError = new AppError("User not found", 404);
-            (userService.getUserByEmail as jest.Mock).mockRejectedValue(
+            (mockUserService.getUserByEmail as jest.Mock).mockRejectedValue(
                 notFoundError,
             );
-            (userService.getUserByName as jest.Mock).mockResolvedValue(null);
-            (userService.createUser as jest.Mock).mockResolvedValue(testUser);
-            (userService.login as jest.Mock).mockReturnValue({
+            (mockUserService.getUserByName as jest.Mock).mockResolvedValue(
+                null,
+            );
+            (mockUserService.createUser as jest.Mock).mockResolvedValue(
+                testUser,
+            );
+            (mockUserService.login as jest.Mock).mockReturnValue({
                 accessToken: "token",
                 refreshToken: "refresh",
             });
@@ -384,7 +383,7 @@ describe("User Controller class", () => {
             );
 
             // Assert
-            expect(userService.createUser).toHaveBeenCalled();
+            expect(mockUserService.createUser).toHaveBeenCalled();
             expect(mockResponse.status).toHaveBeenCalledWith(201);
         });
 
@@ -397,12 +396,16 @@ describe("User Controller class", () => {
             };
 
             const notFoundError = new AppError("User not found", 404);
-            (userService.getUserByEmail as jest.Mock).mockResolvedValue(null);
-            (userService.getUserByName as jest.Mock).mockRejectedValue(
+            (mockUserService.getUserByEmail as jest.Mock).mockResolvedValue(
+                null,
+            );
+            (mockUserService.getUserByName as jest.Mock).mockRejectedValue(
                 notFoundError,
             );
-            (userService.createUser as jest.Mock).mockResolvedValue(testUser);
-            (userService.login as jest.Mock).mockReturnValue({
+            (mockUserService.createUser as jest.Mock).mockResolvedValue(
+                testUser,
+            );
+            (mockUserService.login as jest.Mock).mockReturnValue({
                 accessToken: "token",
                 refreshToken: "refresh",
             });
@@ -415,7 +418,7 @@ describe("User Controller class", () => {
             );
 
             // Assert
-            expect(userService.createUser).toHaveBeenCalled();
+            expect(mockUserService.createUser).toHaveBeenCalled();
             expect(mockResponse.status).toHaveBeenCalledWith(201);
         });
 
@@ -428,7 +431,7 @@ describe("User Controller class", () => {
             };
 
             const serverError = new AppError("Database error", 500);
-            (userService.getUserByEmail as jest.Mock).mockRejectedValue(
+            (mockUserService.getUserByEmail as jest.Mock).mockRejectedValue(
                 serverError,
             );
 
@@ -441,7 +444,7 @@ describe("User Controller class", () => {
 
             // Assert
             expect(mockNext).toHaveBeenCalledWith(serverError);
-            expect(userService.createUser).not.toHaveBeenCalled();
+            expect(mockUserService.createUser).not.toHaveBeenCalled();
         });
 
         it("should propagate non-404 errors from getUserByName", async () => {
@@ -453,8 +456,10 @@ describe("User Controller class", () => {
             };
 
             const serverError = new AppError("Database error", 500);
-            (userService.getUserByEmail as jest.Mock).mockResolvedValue(null);
-            (userService.getUserByName as jest.Mock).mockRejectedValue(
+            (mockUserService.getUserByEmail as jest.Mock).mockResolvedValue(
+                null,
+            );
+            (mockUserService.getUserByName as jest.Mock).mockRejectedValue(
                 serverError,
             );
 
@@ -467,7 +472,7 @@ describe("User Controller class", () => {
 
             // Assert
             expect(mockNext).toHaveBeenCalledWith(serverError);
-            expect(userService.createUser).not.toHaveBeenCalled();
+            expect(mockUserService.createUser).not.toHaveBeenCalled();
         });
     });
 
@@ -483,10 +488,10 @@ describe("User Controller class", () => {
                 password: "Password123!",
             };
 
-            (userService.testCredentials as jest.Mock).mockReturnValue(
+            (mockUserService.testCredentials as jest.Mock).mockReturnValue(
                 testUser,
             );
-            (userService.login as jest.Mock).mockReturnValue({
+            (mockUserService.login as jest.Mock).mockReturnValue({
                 accessToken: mockAccessToken,
                 refreshToken: mockRefreshToken,
             });
@@ -522,10 +527,10 @@ describe("User Controller class", () => {
                 password: "Password123!",
             };
 
-            (userService.testCredentials as jest.Mock).mockReturnValue(
+            (mockUserService.testCredentials as jest.Mock).mockReturnValue(
                 testUser,
             );
-            (userService.login as jest.Mock).mockReturnValue({
+            (mockUserService.login as jest.Mock).mockReturnValue({
                 accessToken: mockAccessToken,
                 refreshToken: mockRefreshToken,
             });
@@ -561,10 +566,10 @@ describe("User Controller class", () => {
                 password: "Password123!",
             };
 
-            (userService.testCredentials as jest.Mock).mockReturnValue(
+            (mockUserService.testCredentials as jest.Mock).mockReturnValue(
                 testUser,
             );
-            (userService.login as jest.Mock).mockReturnValue({
+            (mockUserService.login as jest.Mock).mockReturnValue({
                 accessToken: mockAccessToken,
                 refreshToken: mockRefreshToken,
             });
@@ -806,7 +811,9 @@ describe("User Controller class", () => {
                 role: "user",
             };
 
-            (userService.getUserById as jest.Mock).mockResolvedValue(testUser);
+            (mockUserService.getUserById as jest.Mock).mockResolvedValue(
+                testUser,
+            );
 
             // Act
             await userController.getProfile(
@@ -816,7 +823,7 @@ describe("User Controller class", () => {
             );
 
             // Assert
-            expect(userService.getUserById).toHaveBeenCalledWith(1);
+            expect(mockUserService.getUserById).toHaveBeenCalledWith(1);
             expect(mockResponse.status).toHaveBeenCalledWith(200);
             expect(mockResponse.json).toHaveBeenCalledWith({
                 status: "success",
@@ -848,7 +855,7 @@ describe("User Controller class", () => {
                 "You need to be logged in to access your profile.",
             );
             expect(error.statusCode).toBe(401);
-            expect(userService.getUserById).not.toHaveBeenCalled();
+            expect(mockUserService.getUserById).not.toHaveBeenCalled();
         });
 
         it("should throw error when user is not found in database", async () => {
@@ -859,7 +866,7 @@ describe("User Controller class", () => {
                 role: "user",
             };
 
-            (userService.getUserById as jest.Mock).mockResolvedValue(null);
+            (mockUserService.getUserById as jest.Mock).mockResolvedValue(null);
 
             // Act
             await userController.getProfile(
@@ -869,7 +876,7 @@ describe("User Controller class", () => {
             );
 
             // Assert
-            expect(userService.getUserById).toHaveBeenCalledWith(999);
+            expect(mockUserService.getUserById).toHaveBeenCalledWith(999);
             expect(mockNext).toHaveBeenCalled();
             const error = (mockNext as jest.Mock).mock.calls[0][0];
             expect(error).toBeInstanceOf(AppError);
@@ -877,7 +884,7 @@ describe("User Controller class", () => {
             expect(error.statusCode).toBe(404);
         });
 
-        it("should handle errors from userService.getUserById", async () => {
+        it("should handle errors from mockUserService.getUserById", async () => {
             // Arrange
             const dbError = new Error("Database error");
             mockRequest.user = {
@@ -886,7 +893,9 @@ describe("User Controller class", () => {
                 role: "user",
             };
 
-            (userService.getUserById as jest.Mock).mockRejectedValue(dbError);
+            (mockUserService.getUserById as jest.Mock).mockRejectedValue(
+                dbError,
+            );
 
             // Act
             await userController.getProfile(
@@ -896,7 +905,7 @@ describe("User Controller class", () => {
             );
 
             // Assert
-            expect(userService.getUserById).toHaveBeenCalledWith(1);
+            expect(mockUserService.getUserById).toHaveBeenCalledWith(1);
             expect(mockNext).toHaveBeenCalledWith(dbError);
             expect(mockResponse.status).not.toHaveBeenCalled();
             expect(mockResponse.json).not.toHaveBeenCalled();
@@ -916,7 +925,9 @@ describe("User Controller class", () => {
                 },
             ];
 
-            (userService.getAllUsers as jest.Mock).mockResolvedValue(mockUsers);
+            (mockUserService.getAllUsers as jest.Mock).mockResolvedValue(
+                mockUsers,
+            );
 
             // Act
             await userController.getAllUser(
@@ -926,7 +937,7 @@ describe("User Controller class", () => {
             );
 
             // Assert
-            expect(userService.getAllUsers).toHaveBeenCalled();
+            expect(mockUserService.getAllUsers).toHaveBeenCalled();
             expect(mockResponse.json).toHaveBeenCalledWith({
                 status: "success",
                 data: mockUsers,
@@ -935,7 +946,7 @@ describe("User Controller class", () => {
 
         it("should return empty array when no users exist", async () => {
             // Arrange
-            (userService.getAllUsers as jest.Mock).mockResolvedValue(null);
+            (mockUserService.getAllUsers as jest.Mock).mockResolvedValue(null);
 
             // Act
             await userController.getAllUser(
@@ -945,17 +956,19 @@ describe("User Controller class", () => {
             );
 
             // Assert
-            expect(userService.getAllUsers).toHaveBeenCalled();
+            expect(mockUserService.getAllUsers).toHaveBeenCalled();
             expect(mockResponse.json).toHaveBeenCalledWith({
                 status: "success",
                 data: [],
             });
         });
 
-        it("should handle errors from userService.getAllUsers", async () => {
+        it("should handle errors from mockUserService.getAllUsers", async () => {
             // Arrange
             const dbError = new Error("Database error");
-            (userService.getAllUsers as jest.Mock).mockRejectedValue(dbError);
+            (mockUserService.getAllUsers as jest.Mock).mockRejectedValue(
+                dbError,
+            );
 
             // Act
             await userController.getAllUser(
@@ -965,7 +978,7 @@ describe("User Controller class", () => {
             );
 
             // Assert
-            expect(userService.getAllUsers).toHaveBeenCalled();
+            expect(mockUserService.getAllUsers).toHaveBeenCalled();
             expect(mockNext).toHaveBeenCalledWith(dbError);
         });
     });
@@ -985,7 +998,9 @@ describe("User Controller class", () => {
             };
 
             mockRequest.params = { id: "5" };
-            (userService.getUserById as jest.Mock).mockResolvedValue(mockUser);
+            (mockUserService.getUserById as jest.Mock).mockResolvedValue(
+                mockUser,
+            );
 
             // Act
             await userController.getUser(
@@ -995,7 +1010,7 @@ describe("User Controller class", () => {
             );
 
             // Assert
-            expect(userService.getUserById).toHaveBeenCalledWith(5);
+            expect(mockUserService.getUserById).toHaveBeenCalledWith(5);
             expect(mockResponse.json).toHaveBeenCalledWith({
                 status: "success",
                 data: {
@@ -1025,13 +1040,13 @@ describe("User Controller class", () => {
             expect(error).toBeInstanceOf(AppError);
             expect(error.message).toBe("Missing userId.");
             expect(error.statusCode).toBe(404);
-            expect(userService.getUserById).not.toHaveBeenCalled();
+            expect(mockUserService.getUserById).not.toHaveBeenCalled();
         });
 
         it("should throw error when user is not found", async () => {
             // Arrange
             mockRequest.params = { id: "999" };
-            (userService.getUserById as jest.Mock).mockResolvedValue(null);
+            (mockUserService.getUserById as jest.Mock).mockResolvedValue(null);
 
             // Act
             await userController.getUser(
@@ -1041,7 +1056,7 @@ describe("User Controller class", () => {
             );
 
             // Assert
-            expect(userService.getUserById).toHaveBeenCalledWith(999);
+            expect(mockUserService.getUserById).toHaveBeenCalledWith(999);
             expect(mockNext).toHaveBeenCalled();
             const error = (mockNext as jest.Mock).mock.calls[0][0];
             expect(error).toBeInstanceOf(AppError);
@@ -1049,11 +1064,13 @@ describe("User Controller class", () => {
             expect(error.statusCode).toBe(404);
         });
 
-        it("should handle errors from userService.getUserById", async () => {
+        it("should handle errors from mockUserService.getUserById", async () => {
             // Arrange
             const dbError = new Error("Database error");
             mockRequest.params = { id: "1" };
-            (userService.getUserById as jest.Mock).mockRejectedValue(dbError);
+            (mockUserService.getUserById as jest.Mock).mockRejectedValue(
+                dbError,
+            );
 
             // Act
             await userController.getUser(
@@ -1063,7 +1080,7 @@ describe("User Controller class", () => {
             );
 
             // Assert
-            expect(userService.getUserById).toHaveBeenCalledWith(1);
+            expect(mockUserService.getUserById).toHaveBeenCalledWith(1);
             expect(mockNext).toHaveBeenCalledWith(dbError);
             expect(mockResponse.json).not.toHaveBeenCalled();
         });
@@ -1082,7 +1099,9 @@ describe("User Controller class", () => {
             };
 
             mockRequest.params = { id: "123" };
-            (userService.getUserById as jest.Mock).mockResolvedValue(mockUser);
+            (mockUserService.getUserById as jest.Mock).mockResolvedValue(
+                mockUser,
+            );
 
             // Act
             await userController.getUser(
@@ -1092,7 +1111,7 @@ describe("User Controller class", () => {
             );
 
             // Assert
-            expect(userService.getUserById).toHaveBeenCalledWith(123);
+            expect(mockUserService.getUserById).toHaveBeenCalledWith(123);
         });
     });
 
@@ -1119,10 +1138,10 @@ describe("User Controller class", () => {
                 role: "admin",
             };
 
-            (userService.updateUser as jest.Mock).mockResolvedValue(
+            (mockUserService.updateUser as jest.Mock).mockResolvedValue(
                 updatedUser,
             );
-            (userService.login as jest.Mock).mockReturnValue({
+            (mockUserService.login as jest.Mock).mockReturnValue({
                 accessToken: mockAccessToken,
                 refreshToken: mockRefreshToken,
             });
@@ -1135,12 +1154,12 @@ describe("User Controller class", () => {
             );
 
             // Assert
-            expect(userService.updateUser).toHaveBeenCalledWith(1, {
+            expect(mockUserService.updateUser).toHaveBeenCalledWith(1, {
                 name: "updatedName",
                 email: "updated@test.com",
                 role: "admin",
             });
-            expect(userService.login).toHaveBeenCalledWith(updatedUser);
+            expect(mockUserService.login).toHaveBeenCalledWith(updatedUser);
             expect(mockResponse.cookie).toHaveBeenCalledWith(
                 "refreshToken",
                 mockRefreshToken,
@@ -1189,7 +1208,7 @@ describe("User Controller class", () => {
                 "You need to be logged in to update your profile.",
             );
             expect(error.statusCode).toBe(401);
-            expect(userService.updateUser).not.toHaveBeenCalled();
+            expect(mockUserService.updateUser).not.toHaveBeenCalled();
         });
 
         it("should update only provided fields", async () => {
@@ -1210,10 +1229,10 @@ describe("User Controller class", () => {
                 email: "new@test.com",
             };
 
-            (userService.updateUser as jest.Mock).mockResolvedValue(
+            (mockUserService.updateUser as jest.Mock).mockResolvedValue(
                 updatedUser,
             );
-            (userService.login as jest.Mock).mockReturnValue({
+            (mockUserService.login as jest.Mock).mockReturnValue({
                 accessToken: "token",
                 refreshToken: "refresh",
             });
@@ -1226,14 +1245,14 @@ describe("User Controller class", () => {
             );
 
             // Assert
-            expect(userService.updateUser).toHaveBeenCalledWith(1, {
+            expect(mockUserService.updateUser).toHaveBeenCalledWith(1, {
                 name: undefined,
                 email: "new@test.com",
                 role: undefined,
             });
         });
 
-        it("should handle errors from userService.updateUser", async () => {
+        it("should handle errors from mockUserService.updateUser", async () => {
             // Arrange
             const dbError = new AppError("Update failed", 500);
             mockRequest.user = {
@@ -1245,7 +1264,9 @@ describe("User Controller class", () => {
                 name: "newName",
             };
 
-            (userService.updateUser as jest.Mock).mockRejectedValue(dbError);
+            (mockUserService.updateUser as jest.Mock).mockRejectedValue(
+                dbError,
+            );
 
             // Act
             await userController.updateUser(
@@ -1255,13 +1276,13 @@ describe("User Controller class", () => {
             );
 
             // Assert
-            expect(userService.updateUser).toHaveBeenCalledWith(1, {
+            expect(mockUserService.updateUser).toHaveBeenCalledWith(1, {
                 name: "newName",
                 email: undefined,
                 role: undefined,
             });
             expect(mockNext).toHaveBeenCalledWith(dbError);
-            expect(userService.login).not.toHaveBeenCalled();
+            expect(mockUserService.login).not.toHaveBeenCalled();
             expect(mockResponse.status).not.toHaveBeenCalled();
         });
 
@@ -1283,10 +1304,10 @@ describe("User Controller class", () => {
                 role: "admin",
             };
 
-            (userService.updateUser as jest.Mock).mockResolvedValue(
+            (mockUserService.updateUser as jest.Mock).mockResolvedValue(
                 updatedUser,
             );
-            (userService.login as jest.Mock).mockReturnValue({
+            (mockUserService.login as jest.Mock).mockReturnValue({
                 accessToken: "token",
                 refreshToken: "refresh",
             });
@@ -1299,7 +1320,7 @@ describe("User Controller class", () => {
             );
 
             // Assert
-            expect(userService.updateUser).toHaveBeenCalledWith(1, {
+            expect(mockUserService.updateUser).toHaveBeenCalledWith(1, {
                 name: undefined,
                 email: undefined,
                 role: "admin",
@@ -1338,10 +1359,10 @@ describe("User Controller class", () => {
                 newPassword: "NewP@ssw0rd123",
             };
 
-            (userService.updatePassword as jest.Mock).mockResolvedValue(
+            (mockUserService.updatePassword as jest.Mock).mockResolvedValue(
                 updatedUser,
             );
-            (userService.login as jest.Mock).mockReturnValue({
+            (mockUserService.login as jest.Mock).mockReturnValue({
                 accessToken: mockAccessToken,
                 refreshToken: mockRefreshToken,
             });
@@ -1354,12 +1375,12 @@ describe("User Controller class", () => {
             );
 
             // Assert
-            expect(userService.updatePassword).toHaveBeenCalledWith(
+            expect(mockUserService.updatePassword).toHaveBeenCalledWith(
                 1,
                 "OldP@ssw0rd",
                 "NewP@ssw0rd123",
             );
-            expect(userService.login).toHaveBeenCalledWith(updatedUser);
+            expect(mockUserService.login).toHaveBeenCalledWith(updatedUser);
             expect(mockResponse.cookie).toHaveBeenCalledWith(
                 "refreshToken",
                 mockRefreshToken,
@@ -1409,7 +1430,7 @@ describe("User Controller class", () => {
                 "You need to be logged in to update your profile.",
             );
             expect(error.statusCode).toBe(401);
-            expect(userService.updatePassword).not.toHaveBeenCalled();
+            expect(mockUserService.updatePassword).not.toHaveBeenCalled();
         });
 
         it("should throw AppError with status 401 when user.id is undefined", async () => {
@@ -1436,7 +1457,7 @@ describe("User Controller class", () => {
             const error = (mockNext as jest.Mock).mock.calls[0][0];
             expect(error).toBeInstanceOf(AppError);
             expect(error.statusCode).toBe(401);
-            expect(userService.updatePassword).not.toHaveBeenCalled();
+            expect(mockUserService.updatePassword).not.toHaveBeenCalled();
         });
 
         it("should handle incorrect old password error from service", async () => {
@@ -1452,7 +1473,7 @@ describe("User Controller class", () => {
                 newPassword: "NewP@ssw0rd123",
             };
 
-            (userService.updatePassword as jest.Mock).mockRejectedValue(
+            (mockUserService.updatePassword as jest.Mock).mockRejectedValue(
                 passwordError,
             );
 
@@ -1464,7 +1485,7 @@ describe("User Controller class", () => {
             );
 
             // Assert
-            expect(userService.updatePassword).toHaveBeenCalledWith(
+            expect(mockUserService.updatePassword).toHaveBeenCalledWith(
                 1,
                 "WrongP@ssw0rd",
                 "NewP@ssw0rd123",
@@ -1489,7 +1510,7 @@ describe("User Controller class", () => {
                 newPassword: "SameP@ssw0rd",
             };
 
-            (userService.updatePassword as jest.Mock).mockRejectedValue(
+            (mockUserService.updatePassword as jest.Mock).mockRejectedValue(
                 samePasswordError,
             );
 
@@ -1518,7 +1539,7 @@ describe("User Controller class", () => {
                 newPassword: "weak",
             };
 
-            (userService.updatePassword as jest.Mock).mockRejectedValue(
+            (mockUserService.updatePassword as jest.Mock).mockRejectedValue(
                 formatError,
             );
 
@@ -1530,7 +1551,7 @@ describe("User Controller class", () => {
             );
 
             // Assert
-            expect(userService.updatePassword).toHaveBeenCalledWith(
+            expect(mockUserService.updatePassword).toHaveBeenCalledWith(
                 1,
                 "OldP@ssw0rd",
                 "weak",
@@ -1552,7 +1573,7 @@ describe("User Controller class", () => {
                 newPassword: "NewP@ssw0rd123",
             };
 
-            (userService.updatePassword as jest.Mock).mockRejectedValue(
+            (mockUserService.updatePassword as jest.Mock).mockRejectedValue(
                 notFoundError,
             );
 
@@ -1564,7 +1585,7 @@ describe("User Controller class", () => {
             );
 
             // Assert
-            expect(userService.updatePassword).toHaveBeenCalledWith(
+            expect(mockUserService.updatePassword).toHaveBeenCalledWith(
                 999,
                 "OldP@ssw0rd",
                 "NewP@ssw0rd123",
@@ -1586,7 +1607,7 @@ describe("User Controller class", () => {
                 newPassword: "NewP@ssw0rd123",
             };
 
-            (userService.updatePassword as jest.Mock).mockRejectedValue(
+            (mockUserService.updatePassword as jest.Mock).mockRejectedValue(
                 dbError,
             );
 
@@ -1620,10 +1641,10 @@ describe("User Controller class", () => {
                 newPassword: "NewP@ssw0rd123",
             };
 
-            (userService.updatePassword as jest.Mock).mockResolvedValue(
+            (mockUserService.updatePassword as jest.Mock).mockResolvedValue(
                 updatedUser,
             );
-            (userService.login as jest.Mock).mockReturnValue({
+            (mockUserService.login as jest.Mock).mockReturnValue({
                 accessToken: "token",
                 refreshToken: "refresh",
             });
@@ -1636,7 +1657,7 @@ describe("User Controller class", () => {
             );
 
             // Assert
-            expect(userService.updatePassword).toHaveBeenCalledWith(
+            expect(mockUserService.updatePassword).toHaveBeenCalledWith(
                 42,
                 "OldP@ssw0rd",
                 "NewP@ssw0rd123",
@@ -1661,10 +1682,10 @@ describe("User Controller class", () => {
                 newPassword: "NewP@ssw0rd123",
             };
 
-            (userService.updatePassword as jest.Mock).mockResolvedValue(
+            (mockUserService.updatePassword as jest.Mock).mockResolvedValue(
                 updatedUser,
             );
-            (userService.login as jest.Mock).mockReturnValue({
+            (mockUserService.login as jest.Mock).mockReturnValue({
                 accessToken: "new-token",
                 refreshToken: "new-refresh",
             });
@@ -1677,8 +1698,8 @@ describe("User Controller class", () => {
             );
 
             // Assert
-            expect(userService.login).toHaveBeenCalledWith(updatedUser);
-            expect(userService.login).toHaveBeenCalledTimes(1);
+            expect(mockUserService.login).toHaveBeenCalledWith(updatedUser);
+            expect(mockUserService.login).toHaveBeenCalledTimes(1);
         });
     });
 
@@ -1694,7 +1715,7 @@ describe("User Controller class", () => {
                 password: "correctPassword",
             };
 
-            (userService.deleteUser as jest.Mock).mockResolvedValue(true);
+            (mockUserService.deleteUser as jest.Mock).mockResolvedValue(true);
 
             // Act
             await userController.deleteUser(
@@ -1704,7 +1725,7 @@ describe("User Controller class", () => {
             );
 
             // Assert
-            expect(userService.deleteUser).toHaveBeenCalledWith(
+            expect(mockUserService.deleteUser).toHaveBeenCalledWith(
                 1,
                 "correctPassword",
             );
@@ -1742,7 +1763,7 @@ describe("User Controller class", () => {
                 "You need to be logged in to update your profile.",
             );
             expect(error.statusCode).toBe(401);
-            expect(userService.deleteUser).not.toHaveBeenCalled();
+            expect(mockUserService.deleteUser).not.toHaveBeenCalled();
         });
 
         it("should throw error when password is incorrect", async () => {
@@ -1756,7 +1777,7 @@ describe("User Controller class", () => {
                 password: "wrongPassword",
             };
 
-            (userService.deleteUser as jest.Mock).mockResolvedValue(false);
+            (mockUserService.deleteUser as jest.Mock).mockResolvedValue(false);
 
             // Act
             await userController.deleteUser(
@@ -1766,7 +1787,7 @@ describe("User Controller class", () => {
             );
 
             // Assert
-            expect(userService.deleteUser).toHaveBeenCalledWith(
+            expect(mockUserService.deleteUser).toHaveBeenCalledWith(
                 1,
                 "wrongPassword",
             );
@@ -1780,7 +1801,7 @@ describe("User Controller class", () => {
             expect(mockResponse.clearCookie).not.toHaveBeenCalled();
         });
 
-        it("should handle errors from userService.deleteUser", async () => {
+        it("should handle errors from mockUserService.deleteUser", async () => {
             // Arrange
             const dbError = new Error("Database error");
             mockRequest.user = {
@@ -1792,7 +1813,9 @@ describe("User Controller class", () => {
                 password: "somePassword",
             };
 
-            (userService.deleteUser as jest.Mock).mockRejectedValue(dbError);
+            (mockUserService.deleteUser as jest.Mock).mockRejectedValue(
+                dbError,
+            );
 
             // Act
             await userController.deleteUser(
@@ -1802,7 +1825,7 @@ describe("User Controller class", () => {
             );
 
             // Assert
-            expect(userService.deleteUser).toHaveBeenCalledWith(
+            expect(mockUserService.deleteUser).toHaveBeenCalledWith(
                 1,
                 "somePassword",
             );
@@ -1816,7 +1839,7 @@ describe("User Controller class", () => {
         it("should delete user by id and return success message", async () => {
             // Arrange
             mockRequest.params = { id: "5" };
-            (userService.deleteUserById as jest.Mock).mockResolvedValue(
+            (mockUserService.deleteUserById as jest.Mock).mockResolvedValue(
                 undefined,
             );
 
@@ -1828,7 +1851,7 @@ describe("User Controller class", () => {
             );
 
             // Assert
-            expect(userService.deleteUserById).toHaveBeenCalledWith(5);
+            expect(mockUserService.deleteUserById).toHaveBeenCalledWith(5);
             expect(mockResponse.status).toHaveBeenCalledWith(200);
             expect(mockResponse.json).toHaveBeenCalledWith({
                 status: "success",
@@ -1853,13 +1876,13 @@ describe("User Controller class", () => {
             expect(error).toBeInstanceOf(AppError);
             expect(error.message).toBe("Missing userId");
             expect(error.statusCode).toBe(404);
-            expect(userService.deleteUserById).not.toHaveBeenCalled();
+            expect(mockUserService.deleteUserById).not.toHaveBeenCalled();
         });
 
         it("should correctly parse string id to number", async () => {
             // Arrange
             mockRequest.params = { id: "999" };
-            (userService.deleteUserById as jest.Mock).mockResolvedValue(
+            (mockUserService.deleteUserById as jest.Mock).mockResolvedValue(
                 undefined,
             );
 
@@ -1871,7 +1894,7 @@ describe("User Controller class", () => {
             );
 
             // Assert
-            expect(userService.deleteUserById).toHaveBeenCalledWith(999);
+            expect(mockUserService.deleteUserById).toHaveBeenCalledWith(999);
             expect(mockResponse.json).toHaveBeenCalledWith(
                 expect.objectContaining({
                     message: "User: 999 has been deleted successfully.",
@@ -1879,11 +1902,11 @@ describe("User Controller class", () => {
             );
         });
 
-        it("should handle errors from userService.deleteUserById", async () => {
+        it("should handle errors from mockUserService.deleteUserById", async () => {
             // Arrange
             const dbError = new Error("Database error");
             mockRequest.params = { id: "1" };
-            (userService.deleteUserById as jest.Mock).mockRejectedValue(
+            (mockUserService.deleteUserById as jest.Mock).mockRejectedValue(
                 dbError,
             );
 
@@ -1895,7 +1918,7 @@ describe("User Controller class", () => {
             );
 
             // Assert
-            expect(userService.deleteUserById).toHaveBeenCalledWith(1);
+            expect(mockUserService.deleteUserById).toHaveBeenCalledWith(1);
             expect(mockNext).toHaveBeenCalledWith(dbError);
             expect(mockResponse.status).not.toHaveBeenCalled();
         });
@@ -1905,12 +1928,12 @@ describe("User Controller class", () => {
         it("should send success response when email exists", async () => {
             // Arrange
             mockRequest.body = { email: "test@test.com" };
-            (userService.getUserByEmail as jest.Mock).mockResolvedValue(
+            (mockUserService.getUserByEmail as jest.Mock).mockResolvedValue(
                 testUser,
             );
-            (userService.passwordResetRequest as jest.Mock).mockResolvedValue(
-                undefined,
-            );
+            (
+                mockUserService.passwordResetRequest as jest.Mock
+            ).mockResolvedValue(undefined);
 
             // Act
             await userController.forgotPassword(
@@ -1920,10 +1943,10 @@ describe("User Controller class", () => {
             );
 
             // Assert
-            expect(userService.getUserByEmail).toHaveBeenCalledWith(
+            expect(mockUserService.getUserByEmail).toHaveBeenCalledWith(
                 "test@test.com",
             );
-            expect(userService.passwordResetRequest).toHaveBeenCalledWith(
+            expect(mockUserService.passwordResetRequest).toHaveBeenCalledWith(
                 testUser,
             );
             expect(mockResponse.status).toHaveBeenCalledWith(200);
@@ -1937,7 +1960,7 @@ describe("User Controller class", () => {
         it("should send success response even when email does not exist (security)", async () => {
             // Arrange
             mockRequest.body = { email: "nonexistent@test.com" };
-            (userService.getUserByEmail as jest.Mock).mockRejectedValue(
+            (mockUserService.getUserByEmail as jest.Mock).mockRejectedValue(
                 new AppError("User not found.", 404),
             );
 
@@ -1949,10 +1972,10 @@ describe("User Controller class", () => {
             );
 
             // Assert
-            expect(userService.getUserByEmail).toHaveBeenCalledWith(
+            expect(mockUserService.getUserByEmail).toHaveBeenCalledWith(
                 "nonexistent@test.com",
             );
-            expect(userService.passwordResetRequest).not.toHaveBeenCalled();
+            expect(mockUserService.passwordResetRequest).not.toHaveBeenCalled();
             expect(mockResponse.status).toHaveBeenCalledWith(200);
             expect(mockResponse.json).toHaveBeenCalledWith({
                 status: "success",
@@ -1978,7 +2001,7 @@ describe("User Controller class", () => {
             expect(error).toBeInstanceOf(AppError);
             expect(error.message).toBe("Missing e-mail");
             expect(error.statusCode).toBe(400);
-            expect(userService.getUserByEmail).not.toHaveBeenCalled();
+            expect(mockUserService.getUserByEmail).not.toHaveBeenCalled();
         });
 
         it("should throw AppError with status 400 when email is empty string", async () => {
@@ -2004,7 +2027,7 @@ describe("User Controller class", () => {
             // Arrange
             const dbError = new AppError("Database connection error", 500);
             mockRequest.body = { email: "test@test.com" };
-            (userService.getUserByEmail as jest.Mock).mockRejectedValue(
+            (mockUserService.getUserByEmail as jest.Mock).mockRejectedValue(
                 dbError,
             );
 
@@ -2024,12 +2047,12 @@ describe("User Controller class", () => {
             // Arrange
             const emailError = new Error("Email service error");
             mockRequest.body = { email: "test@test.com" };
-            (userService.getUserByEmail as jest.Mock).mockResolvedValue(
+            (mockUserService.getUserByEmail as jest.Mock).mockResolvedValue(
                 testUser,
             );
-            (userService.passwordResetRequest as jest.Mock).mockRejectedValue(
-                emailError,
-            );
+            (
+                mockUserService.passwordResetRequest as jest.Mock
+            ).mockRejectedValue(emailError);
 
             // Act
             await userController.forgotPassword(
@@ -2046,7 +2069,9 @@ describe("User Controller class", () => {
         it("should not call passwordResetRequest if user is null", async () => {
             // Arrange
             mockRequest.body = { email: "test@test.com" };
-            (userService.getUserByEmail as jest.Mock).mockResolvedValue(null);
+            (mockUserService.getUserByEmail as jest.Mock).mockResolvedValue(
+                null,
+            );
 
             // Act
             await userController.forgotPassword(
@@ -2056,14 +2081,14 @@ describe("User Controller class", () => {
             );
 
             // Assert
-            expect(userService.passwordResetRequest).not.toHaveBeenCalled();
+            expect(mockUserService.passwordResetRequest).not.toHaveBeenCalled();
             expect(mockResponse.status).toHaveBeenCalledWith(200);
         });
 
         it("should not call passwordResetRequest if user is undefined", async () => {
             // Arrange
             mockRequest.body = { email: "test@test.com" };
-            (userService.getUserByEmail as jest.Mock).mockResolvedValue(
+            (mockUserService.getUserByEmail as jest.Mock).mockResolvedValue(
                 undefined,
             );
 
@@ -2075,7 +2100,7 @@ describe("User Controller class", () => {
             );
 
             // Assert
-            expect(userService.passwordResetRequest).not.toHaveBeenCalled();
+            expect(mockUserService.passwordResetRequest).not.toHaveBeenCalled();
             expect(mockResponse.status).toHaveBeenCalledWith(200);
         });
     });
@@ -2086,7 +2111,7 @@ describe("User Controller class", () => {
             const mockToken = "valid-reset-token";
             const mockPassword = "NewP@ssw0rd123";
             mockRequest.body = { token: mockToken, password: mockPassword };
-            (userService.passwordReset as jest.Mock).mockResolvedValue(
+            (mockUserService.passwordReset as jest.Mock).mockResolvedValue(
                 testUser,
             );
 
@@ -2098,7 +2123,7 @@ describe("User Controller class", () => {
             );
 
             // Assert
-            expect(userService.passwordReset).toHaveBeenCalledWith(
+            expect(mockUserService.passwordReset).toHaveBeenCalledWith(
                 mockToken,
                 mockPassword,
             );
@@ -2129,7 +2154,7 @@ describe("User Controller class", () => {
                 "You're missing a password reset token.",
             );
             expect(error.statusCode).toBe(405);
-            expect(userService.passwordReset).not.toHaveBeenCalled();
+            expect(mockUserService.passwordReset).not.toHaveBeenCalled();
         });
 
         it("should throw AppError with status 405 when token is empty string", async () => {
@@ -2170,7 +2195,7 @@ describe("User Controller class", () => {
             expect(error).toBeInstanceOf(AppError);
             expect(error.message).toBe("Your new password cannot be blank.");
             expect(error.statusCode).toBe(405);
-            expect(userService.passwordReset).not.toHaveBeenCalled();
+            expect(mockUserService.passwordReset).not.toHaveBeenCalled();
         });
 
         it("should throw AppError with status 405 when password is empty string", async () => {
@@ -2192,14 +2217,14 @@ describe("User Controller class", () => {
             expect(error.statusCode).toBe(405);
         });
 
-        it("should handle errors from userService.passwordReset", async () => {
+        it("should handle errors from mockUserService.passwordReset", async () => {
             // Arrange
             const resetError = new AppError("Invalid or expired token", 400);
             mockRequest.body = {
                 token: "invalid-token",
                 password: "NewP@ssw0rd123",
             };
-            (userService.passwordReset as jest.Mock).mockRejectedValue(
+            (mockUserService.passwordReset as jest.Mock).mockRejectedValue(
                 resetError,
             );
 
@@ -2211,7 +2236,7 @@ describe("User Controller class", () => {
             );
 
             // Assert
-            expect(userService.passwordReset).toHaveBeenCalledWith(
+            expect(mockUserService.passwordReset).toHaveBeenCalledWith(
                 "invalid-token",
                 "NewP@ssw0rd123",
             );
@@ -2223,7 +2248,7 @@ describe("User Controller class", () => {
             // Arrange
             const formatError = new AppError("Invalid password format.", 400);
             mockRequest.body = { token: "valid-token", password: "weak" };
-            (userService.passwordReset as jest.Mock).mockRejectedValue(
+            (mockUserService.passwordReset as jest.Mock).mockRejectedValue(
                 formatError,
             );
 
@@ -2235,7 +2260,7 @@ describe("User Controller class", () => {
             );
 
             // Assert
-            expect(userService.passwordReset).toHaveBeenCalledWith(
+            expect(mockUserService.passwordReset).toHaveBeenCalledWith(
                 "valid-token",
                 "weak",
             );
@@ -2252,7 +2277,7 @@ describe("User Controller class", () => {
                 token: "valid-token",
                 password: "OldP@ssw0rd",
             };
-            (userService.passwordReset as jest.Mock).mockRejectedValue(
+            (mockUserService.passwordReset as jest.Mock).mockRejectedValue(
                 samePasswordError,
             );
 
@@ -2283,7 +2308,7 @@ describe("User Controller class", () => {
             const error = (mockNext as jest.Mock).mock.calls[0][0];
             expect(error).toBeInstanceOf(AppError);
             expect(error.statusCode).toBe(405);
-            expect(userService.passwordReset).not.toHaveBeenCalled();
+            expect(mockUserService.passwordReset).not.toHaveBeenCalled();
         });
     });
 });

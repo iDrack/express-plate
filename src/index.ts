@@ -1,3 +1,5 @@
+import "reflect-metadata";
+import { Container } from "typedi";
 import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
 import express from "express";
@@ -33,7 +35,7 @@ if (logger.settings.minLevel <= 1) {
 //Routes
 app.use("/users", UserRoutes);
 app.use("/health", HealthRoutes);
-app.use('/file', FileTransfertRoute)
+app.use("/file", FileTransfertRoute);
 
 //Errors handling
 app.use(errorHandler);

@@ -4,16 +4,18 @@ import {
     type DetailedHealthCheckResponse,
     type ReadinessCheckResponse,
 } from "./health.types.js";
-import { healthService } from "./health.service.js";
+import { Container } from "typedi";
+import { HealthService } from "./health.service.js";
 
 export class HealthController {
+    private healthService = Container.get(HealthService);
     constructor() {
         this.ping = this.ping.bind(this);
         this.isAlive = this.isAlive.bind(this);
         this.isReady = this.isReady.bind(this);
         this.healthCheck = this.healthCheck.bind(this);
     }
-    
+
     /**
      * Simple function to quickly test if the API is up or not.
      * @param req Incoming HTTP request.
@@ -22,7 +24,7 @@ export class HealthController {
      */
     async ping(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
-            const uptime = healthService.getUptime();
+            const uptime = this.healthService.getUptime();
             res.status(200).json({
                 status: HealthStatus.HEALTHY,
                 timestamp: new Date().toISOString(),
@@ -66,7 +68,7 @@ export class HealthController {
         next: NextFunction,
     ): Promise<void> {
         try {
-            const isDBReady = await healthService.pingDB();
+            const isDBReady = await this.healthService.pingDB();
 
             const response: ReadinessCheckResponse = {
                 status: isDBReady ? "ready" : "not_ready",
@@ -102,7 +104,7 @@ export class HealthController {
         next: NextFunction,
     ): Promise<void> {
         try {
-            const isRedisReady = await healthService.pingRedis();
+            const isRedisReady = await this.healthService.pingRedis();
 
             const response: ReadinessCheckResponse = {
                 status: isRedisReady ? "ready" : "not_ready",
@@ -138,8 +140,8 @@ export class HealthController {
         next: NextFunction,
     ): Promise<void> {
         try {
-            const isDBReady = await healthService.pingDB();
-            const isRedisReady = await healthService.pingRedis();
+            const isDBReady = await this.healthService.pingDB();
+            const isRedisReady = await this.healthService.pingRedis();
 
             const response: ReadinessCheckResponse = {
                 status: isDBReady && isRedisReady ? "ready" : "not_ready",
@@ -178,9 +180,9 @@ export class HealthController {
     ): Promise<void> {
         try {
             const [dbCheck, redisCheck, memoryCheck] = await Promise.all([
-                healthService.checkDatabase(),
-                healthService.checkRedis(),
-                Promise.resolve(healthService.checkMemory()),
+                this.healthService.checkDatabase(),
+                this.healthService.checkRedis(),
+                Promise.resolve(this.healthService.checkMemory()),
             ]);
 
             const checks = {
@@ -189,12 +191,12 @@ export class HealthController {
                 memory: memoryCheck,
             };
 
-            const overallStatus = healthService.checkGlobalStatus(checks);
+            const overallStatus = this.healthService.checkGlobalStatus(checks);
 
             const response: DetailedHealthCheckResponse = {
                 status: overallStatus,
                 timestamp: new Date().toISOString(),
-                uptime: healthService.getUptime(),
+                uptime: this.healthService.getUptime(),
                 checks,
                 version: process.env.APP_VERSION || "1.0.0",
                 environment: process.env.NODE_ENV || "development",

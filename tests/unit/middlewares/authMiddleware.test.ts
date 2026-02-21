@@ -5,17 +5,23 @@ import {
 } from "../../../src/middlewares/authMiddleware";
 import { AppError } from "../../../src/middlewares/errorHandler";
 import { JwtService } from "../../../src/modules/core/jwt.service";
-import { userService } from "../../../src/modules/user/user.service";
+import { UserService } from "../../../src/modules/user/user.service";
+import { MockContainer } from "../../utils/mockContainer";
+import { Container } from "typedi";
 
 jest.mock("../../../src/modules/core/jwt.service");
-jest.mock("../../../src/modules/user/user.service");
 
 describe("Authentification middleware", () => {
     let mockRequest: Partial<Request>;
     let mockResponse: Partial<Response>;
     let mockNext: NextFunction;
+    let mockUserService: jest.Mocked<UserService>;
 
     beforeEach(() => {
+        mockUserService = MockContainer.createMockService<UserService>(UserService);
+
+        Container.set(UserService, mockUserService);
+
         const user = {
             id: 1,
             name: "test",
@@ -32,6 +38,7 @@ describe("Authentification middleware", () => {
     });
 
     afterEach(() => {
+        Container.reset();
         jest.clearAllMocks();
     });
 
@@ -49,24 +56,34 @@ describe("Authentification middleware", () => {
                 },
             };
             (JwtService.verifyAccessToken as jest.Mock).mockReturnValue(
-                mockDecoded
+                mockDecoded,
             );
-            (userService.checkUserExist as jest.Mock).mockResolvedValue(true);
+            mockUserService.checkUserExist.mockResolvedValue(true);
+
+            // Spy sur Container.get pour vérifier ce qui est retourné
+            const containerGetSpy = jest.spyOn(Container, "get");
 
             //Act
             await authenticate(
                 mockRequest as Request,
                 mockResponse as Response,
-                mockNext
+                mockNext,
             );
 
             //Assert
             expect(JwtService.verifyAccessToken).toHaveBeenCalledWith(
-                "validtoken123"
+                "validtoken123",
             );
-            expect(userService.checkUserExist).toHaveBeenCalledWith(1);
+            // Vérifier que Container.get a été appelé avec UserService
+            expect(containerGetSpy).toHaveBeenCalledWith(UserService);
+            // Vérifier que le service retourné est bien notre mock
+            expect(containerGetSpy).toHaveReturnedWith(mockUserService);
+            expect(mockUserService.checkUserExist).toHaveBeenCalledWith(1);
             expect(mockRequest.user).toEqual(mockDecoded);
             expect(mockNext).toHaveBeenCalledWith();
+
+            // Cleanup
+            containerGetSpy.mockRestore();
         });
 
         it("should throw 401 error when no authorization header", async () => {
@@ -79,7 +96,7 @@ describe("Authentification middleware", () => {
             await authenticate(
                 mockRequest as Request,
                 mockResponse as Response,
-                mockNext
+                mockNext,
             );
 
             //Assert
@@ -102,7 +119,7 @@ describe("Authentification middleware", () => {
             await authenticate(
                 mockRequest as Request,
                 mockResponse as Response,
-                mockNext
+                mockNext,
             );
 
             //Assert
@@ -123,14 +140,14 @@ describe("Authentification middleware", () => {
             (JwtService.verifyAccessToken as jest.Mock).mockImplementation(
                 () => {
                     throw new AppError("Invalid token", 401);
-                }
+                },
             );
 
             //Act
             await authenticate(
                 mockRequest as Request,
                 mockResponse as Response,
-                mockNext
+                mockNext,
             );
 
             //Assert
@@ -153,15 +170,17 @@ describe("Authentification middleware", () => {
                 },
             };
             (JwtService.verifyAccessToken as jest.Mock).mockReturnValue(
-                mockDecoded
+                mockDecoded,
             );
-            (userService.checkUserExist as jest.Mock).mockResolvedValue(false);
+
+            // Configure mock after import
+            mockUserService.checkUserExist.mockResolvedValue(false);
 
             //Act
             await authenticate(
                 mockRequest as Request,
                 mockResponse as Response,
-                mockNext
+                mockNext,
             );
 
             //Assert
@@ -184,7 +203,7 @@ describe("Authentification middleware", () => {
             middleware(
                 mockRequest as Request,
                 mockResponse as Response,
-                mockNext
+                mockNext,
             );
             expect(mockNext).toHaveBeenCalled();
         });
@@ -199,7 +218,7 @@ describe("Authentification middleware", () => {
             middleware(
                 mockRequest as Request,
                 mockResponse as Response,
-                mockNext
+                mockNext,
             );
 
             //Assert
@@ -208,7 +227,7 @@ describe("Authentification middleware", () => {
             expect(error).toBeInstanceOf(AppError);
             expect(error.statusCode).toBe(401);
             expect(error.message).toBe(
-                "You need to be logged in to access this ressource."
+                "You need to be logged in to access this ressource.",
             );
         });
 
@@ -221,7 +240,7 @@ describe("Authentification middleware", () => {
             middleware(
                 mockRequest as Request,
                 mockResponse as Response,
-                mockNext
+                mockNext,
             );
 
             //Assert
@@ -230,7 +249,7 @@ describe("Authentification middleware", () => {
             expect(error).toBeInstanceOf(AppError);
             expect(error.statusCode).toBe(403);
             expect(error.message).toBe(
-                "Forbidden: Insuffisant rights to access this ressource."
+                "Forbidden: Insuffisant rights to access this ressource.",
             );
         });
     });

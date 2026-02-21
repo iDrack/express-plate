@@ -1,25 +1,20 @@
+import "reflect-metadata";
 import type SMTPTransport from "nodemailer/lib/smtp-transport/index.js";
 import { logger } from "../../config/logger.js";
 import nodemailer from "nodemailer";
 import type { OutgoingMail } from "./templates/OutgoingMail.js";
 import type { User } from "../../models/user.js";
 import { ResetPasswordMail } from "./templates/ResetPasswordMail.js";
+import { Service } from "typedi";
 
+@Service()
 export class MailService {
-    private static instance: MailService;
     private mailUser: string;
 
     private transporter: nodemailer.Transporter<
         SMTPTransport.SentMessageInfo,
         SMTPTransport.Options
     >;
-
-    static getInstance() {
-        if (!MailService.instance) {
-            MailService.instance = new MailService();
-        }
-        return MailService.instance;
-    }
 
     constructor() {
         const isProdMode = process.env.NODE_ENV === "production";
@@ -87,4 +82,3 @@ export class MailService {
     }
 }
 
-export const mailService = MailService.getInstance();

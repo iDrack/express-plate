@@ -1,23 +1,18 @@
+import "reflect-metadata";
 import type { Repository } from "typeorm";
 import { FileInfo } from "../../models/fileInfo.js";
 import { AppDataSource } from "../../config/database.js";
-import { userService } from "../user/user.service.js";
+import { UserService } from "../user/user.service.js";
 import type { FileMetaData } from "./transfert.types.js";
 import { AppError } from "../../middlewares/errorHandler.js";
 import fs from "fs";
+import { Inject, Service } from "typedi";
 
-class TransfertService {
+@Service()
+export class TransfertService {
     private fileInfoRepository: Repository<FileInfo>;
-    private static instance: TransfertService;
 
-    static getInstance() {
-        if (!TransfertService.instance) {
-            TransfertService.instance = new TransfertService();
-        }
-        return TransfertService.instance;
-    }
-
-    private constructor() {
+    constructor(@Inject() private userService: UserService) {
         this.fileInfoRepository = AppDataSource.getRepository(FileInfo);
     }
 
@@ -59,7 +54,7 @@ class TransfertService {
         file: Express.Multer.File,
         userId: number,
     ): Promise<FileMetaData> {
-        const user = await userService.getUserById(userId);
+        const user = await this.userService.getUserById(userId);
         const fileMeta = {
             originalName: file.originalname,
             storedAs: file.filename,
@@ -237,5 +232,3 @@ class TransfertService {
         }
     }
 }
-
-export const transfertService = TransfertService.getInstance();

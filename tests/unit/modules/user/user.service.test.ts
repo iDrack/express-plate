@@ -1,9 +1,13 @@
+import "reflect-metadata";
+import { Container } from "typedi";
+import { MockContainer } from "../../../utils/mockContainer";
 import { Role } from "../../../../src/models/role";
 import { User } from "../../../../src/models/user";
 import * as bcrypt from "bcrypt";
 import { AppError } from "../../../../src/middlewares/errorHandler";
+import { UserService } from "../../../../src/modules/user/user.service";
+import { MailService } from "../../../../src/modules/mail/mail.service";
 
-// Mocked repository directly inside the Data source
 jest.mock("../../../../src/config/database", () => {
     const mockRepository = {
         findOne: jest.fn(),
@@ -21,6 +25,7 @@ jest.mock("../../../../src/config/database", () => {
     };
 });
 
+// Mock JwtService at module level since it's used statically
 jest.mock("../../../../src/modules/core/jwt.service", () => ({
     JwtService: {
         generateAccessToken: jest.fn(() => "mock-access-token"),
@@ -37,36 +42,51 @@ jest.mock("../../../../src/models/role", () => {
     };
 });
 
-// Mock mail service
-jest.mock("../../../../src/modules/mail/mail.service", () => ({
-    mailService: {
-        resetEmailRequest: jest.fn(),
+jest.mock("../../../../src/config/redis", () => ({
+    __esModule: true,
+    default: {
+        get: jest.fn(),
+        set: jest.fn(),
+        del: jest.fn(),
+        exists: jest.fn(),
+        expire: jest.fn(),
+        ttl: jest.fn(),
+        ping: jest.fn().mockResolvedValue("PONG"),
+        quit: jest.fn(),
+        disconnect: jest.fn(),
+        on: jest.fn(),
     },
 }));
 
 import { AppDataSource } from "../../../../src/config/database";
-import { userService } from "../../../../src/modules/user/user.service";
-import { JwtService } from "../../../../src/modules/core/jwt.service";
 import { toRole } from "../../../../src/models/role";
-import { mailService } from "../../../../src/modules/mail/mail.service";
 import redis from "../../../../src/config/redis";
+import { JwtService } from "../../../../src/modules/core/jwt.service";
 
-//const mockUserRepository = mockRepository as any;
 const mockUserRepository = AppDataSource.getRepository(User) as any;
-const mockMailService = mailService as jest.Mocked<typeof mailService>;
 const mockRedis = jest.mocked(redis);
+const mockJwtServiceStatic = jest.mocked(JwtService);
 
 describe("UserService", () => {
+    let userService: UserService;
+    let mockMailService: jest.Mocked<MailService>;
     let testUser: User;
-    let JwtService: any;
 
-    beforeAll(async () => {
-        // Import JWT service otherwise the mock won't work
-        const module = await import("../../../../src/modules/core/jwt.service");
-        JwtService = module.JwtService;
-    });
     beforeEach(async () => {
-        jest.clearAllMocks();
+        MockContainer.reset();
+
+        // Create manual mocks for the services
+        mockMailService = {
+            mailUser: "test@test.com",
+            transporter: {} as any,
+            sendEmail: jest.fn().mockResolvedValue({} as any),
+            resetEmailRequest: jest.fn().mockResolvedValue({} as any),
+        } as unknown as jest.Mocked<MailService>;
+
+        // Register mocks in container
+        Container.set(MailService, mockMailService as MailService);
+
+        userService = Container.get(UserService);
 
         testUser = new User();
         testUser.id = 1;
@@ -138,12 +158,16 @@ describe("UserService", () => {
             //Assert
             expect(result.accessToken).toBe("mock-access-token");
             expect(result.refreshToken).toBe("mock-refresh-token");
-            expect(JwtService.generateAccessToken).toHaveBeenCalledWith({
+            expect(
+                mockJwtServiceStatic.generateAccessToken,
+            ).toHaveBeenCalledWith({
                 id: testUser.id,
                 name: testUser.name,
                 role: testUser.role,
             });
-            expect(JwtService.generateRefreshToken).toHaveBeenCalledWith({
+            expect(
+                mockJwtServiceStatic.generateRefreshToken,
+            ).toHaveBeenCalledWith({
                 id: testUser.id,
                 name: testUser.name,
                 role: testUser.role,

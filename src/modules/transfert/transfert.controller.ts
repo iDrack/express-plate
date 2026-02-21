@@ -1,11 +1,13 @@
 import type { Request, Response, NextFunction } from "express";
 import { AppError } from "../../middlewares/errorHandler.js";
-import { transfertService } from "./transfert.service.js";
+import { TransfertService } from "./transfert.service.js";
 import type { FileMetaData, FilePageMetaData } from "./transfert.types.js";
 import path from "path";
+import { Container } from "typedi";
 
 export class TransfertController {
     limit: number;
+    private transfertService = Container.get(TransfertService);
 
     constructor() {
         this.limit = 20;
@@ -43,7 +45,7 @@ export class TransfertController {
 
             const filesInfos: Array<FileMetaData> = await Promise.all(
                 files.map((file) =>
-                    transfertService.uploadFile(file, req.user.id),
+                    this.transfertService.uploadFile(file, req.user.id),
                 ),
             );
             const filesById = filesInfos.reduce<Record<string, FileMetaData>>(
@@ -69,7 +71,7 @@ export class TransfertController {
      * @returns Number of total pages.
      */
     private async getTotalPages(): Promise<number> {
-        const totalNbFile = await transfertService.countNbFiles();
+        const totalNbFile = await this.transfertService.countNbFiles();
         return Math.ceil(totalNbFile / this.limit);
     }
 
@@ -83,7 +85,7 @@ export class TransfertController {
         result: Array<FileMetaData>,
         page: number,
     ): Promise<FilePageMetaData> {
-        const totalNbFile = await transfertService.countNbFiles();
+        const totalNbFile = await this.transfertService.countNbFiles();
         const totalPages = await this.getTotalPages();
 
         return {
@@ -121,7 +123,7 @@ export class TransfertController {
             }
             const offset = (page - 1) * this.limit;
 
-            const result = await transfertService.getFilesByUserId(
+            const result = await this.transfertService.getFilesByUserId(
                 req.user.id,
                 offset,
                 this.limit,
@@ -162,7 +164,7 @@ export class TransfertController {
                 throw new AppError("User id is invalid.", 405);
             }
 
-            const result = await transfertService.getFileByIdByUser(
+            const result = await this.transfertService.getFileByIdByUser(
                 parseInt(req.params.id),
                 req.user.id,
             );
@@ -199,7 +201,7 @@ export class TransfertController {
                 throw new AppError("User id is invalid.", 405);
             }
 
-            const filePath = await transfertService.getFilePathByIdByUser(
+            const filePath = await this.transfertService.getFilePathByIdByUser(
                 parseInt(req.params.id),
                 req.user.id,
             );
@@ -243,13 +245,13 @@ export class TransfertController {
                 userId: req.user.id,
             };
 
-            const filePath = await transfertService.getFilePathByIdByUser(
+            const filePath = await this.transfertService.getFilePathByIdByUser(
                 fileId,
                 userId,
             );
             const file = path.resolve(filePath);
             const originalName =
-                await transfertService.getFileOriginalNameByIdByUser(
+                await this.transfertService.getFileOriginalNameByIdByUser(
                     fileId,
                     userId,
                 );
@@ -287,7 +289,7 @@ export class TransfertController {
                 throw new AppError("User id is invalid.", 405);
             }
 
-            const result = await transfertService.deleteFileByIdByUser(
+            const result = await this.transfertService.deleteFileByIdByUser(
                 parseInt(req.params.id),
                 req.user.id,
             );

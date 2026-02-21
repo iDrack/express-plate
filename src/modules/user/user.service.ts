@@ -1,3 +1,4 @@
+import "reflect-metadata";
 import bcrypt from "bcrypt";
 import type { Repository } from "typeorm";
 import { AppDataSource } from "../../config/database.js";
@@ -7,22 +8,16 @@ import { toRole } from "../../models/role.js";
 import { User } from "../../models/user.js";
 import redis from "../../config/redis.js";
 import { JwtService } from "../core/jwt.service.js";
-import { mailService } from "../mail/mail.service.js";
 import type { TokensResponse } from "./user.types.js";
+import { MailService } from "../mail/mail.service.js";
+import { Inject, Service } from "typedi";
 
-class UserService {
+@Service()
+export class UserService {
     private userRepository: Repository<User>;
     private passwordRegex: RegExp;
-    private static instance: UserService;
 
-    static getInstance() {
-        if (!UserService.instance) {
-            UserService.instance = new UserService();
-        }
-        return UserService.instance;
-    }
-
-    private constructor() {
+    constructor(@Inject() private mailService: MailService) {
         this.userRepository = AppDataSource.getRepository(User);
         this.passwordRegex =
             /^.*(?=.{8,})(?=.*[a-zA-Z])(?=.*\d)(?=.*[!@#$%&? "]).*$/;
@@ -292,7 +287,7 @@ class UserService {
         const redisKey = `pwdreset:${urlToken}`;
         await redis.set(redisKey, user.id.toString(), "EX", 600, "NX");
 
-        const res = mailService.resetEmailRequest(user, urlToken);
+        const res = this.mailService.resetEmailRequest(user, urlToken);
     }
 
     /**
@@ -330,4 +325,3 @@ class UserService {
     }
 }
 
-export const userService = UserService.getInstance();

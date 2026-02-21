@@ -1,8 +1,9 @@
+import "reflect-metadata";
 import type { Request, Response, NextFunction } from "express";
 import { AppError } from "./errorHandler.js";
 import { JwtService } from "../modules/core/jwt.service.js";
-import { userService } from "../modules/user/user.service.js";
-
+import { UserService } from "../modules/user/user.service.js";
+import { Container } from "typedi";
 declare global {
     namespace Express {
         interface Request {
@@ -27,19 +28,20 @@ export interface AuthRequest extends Request {
  * @param res Response for the incoming request.
  * @param next Function to execute after this one.
  */
-export const authenticate = async(
+export const authenticate = async (
     req: Request,
     res: Response,
-    next: NextFunction
+    next: NextFunction,
 ) => {
     try {
+        const userService = Container.get(UserService);
         const authHeader = req.headers.authorization;
 
         if (!authHeader || !authHeader.startsWith("Bearer ")) {
             throw new AppError("You need to be logged in.", 401);
         }
         const token = authHeader.split(" ")[1];
-        const decoded = JwtService.verifyAccessToken(token as string);       
+        const decoded = JwtService.verifyAccessToken(token as string);
 
         if (!(await userService.checkUserExist(decoded.id)))
             throw new AppError("User no longer exists.", 401);
@@ -49,7 +51,7 @@ export const authenticate = async(
             name: decoded.name,
             role: decoded.role,
         };
-        
+
         next();
     } catch (error) {
         next(error);
@@ -67,19 +69,19 @@ export const authorize = (allowedRoles: string[]) => {
             return next(
                 new AppError(
                     "You need to be logged in to access this ressource.",
-                    401
-                )
+                    401,
+                ),
             );
-        }        
+        }
         if (!allowedRoles.includes(req.user.role.toLowerCase())) {
             return next(
                 new AppError(
                     "Forbidden: Insuffisant rights to access this ressource.",
-                    403
-                )
+                    403,
+                ),
             );
         }
-        
+
         next();
     };
 };

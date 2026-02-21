@@ -1,21 +1,16 @@
+import "reflect-metadata";
 import type { DataSource } from "typeorm";
 import { AppDataSource } from "../../config/database.js";
 import { HealthStatus, type DependencyCheck } from "./health.types.js";
 import redis from "../../config/redis.js";
+import { Service } from "typedi";
 
-class HealthService {
-    private static instance: HealthService;
+@Service()
+export class HealthService {
     private startTime: number;
     private dataSource: DataSource;
 
-    static getInstance(): HealthService {
-        if (!HealthService.instance) {
-            HealthService.instance = new HealthService();
-        }
-        return HealthService.instance;
-    }
-
-    private constructor() {
+    constructor() {
         this.startTime = Date.now();
         this.dataSource = AppDataSource;
     }
@@ -33,7 +28,7 @@ class HealthService {
      * @returns True if the database is available, otherwise return False;
      */
     async pingDB(): Promise<boolean> {
-        const dbCheck = await healthService.checkDatabase();
+        const dbCheck = await this.checkDatabase();
         return dbCheck.status === HealthStatus.HEALTHY;
     }
 
@@ -193,5 +188,3 @@ class HealthService {
         return HealthStatus.HEALTHY;
     }
 }
-
-export const healthService = HealthService.getInstance();
