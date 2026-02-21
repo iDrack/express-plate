@@ -12,7 +12,7 @@ export class TransfertController {
         this.uploadMultipleFile = this.uploadMultipleFile.bind(this);
         this.deleteFileById = this.deleteFileById.bind(this);
         this.getAllFiles = this.getAllFiles.bind(this);
-        this.getFileById = this.getAllFiles.bind(this);
+        this.getFileById = this.getFileById.bind(this);
         this.getPageMetaData = this.getPageMetaData.bind(this);
         this.DownloadFileById = this.DownloadFileById.bind(this);
         this.StreamFileById = this.StreamFileById.bind(this);

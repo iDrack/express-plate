@@ -93,6 +93,7 @@ const config: Config = {
 
     // A map from regular expressions to module names or to arrays of module names that allow to stub out resources with a single module
     moduleNameMapper: {
+        '^app-root-path$': '<rootDir>/tests/__mocks__/app-root-path.js',
         "^(\\.{1,2}/.*)\\.js$": "$1",
     },
 

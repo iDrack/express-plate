@@ -19,10 +19,14 @@ const storage = multer.diskStorage({
         cb(null, absPath);
     },
     filename: (req, file, cb) => {
-        const fileExt = file.originalname.split(".").at(-1)
         //Generate random unique name for file, original name is sanitized and saved in db
-        const id = crypto.randomUUID()
-        cb(null, `${id}.${fileExt}`);
+        const id = crypto.randomUUID();
+        if (file.originalname.split("").includes(".")) {
+            const fileExt = file.originalname.split(".").at(-1);
+            cb(null, `${id}.${fileExt}`);
+        } else {
+            cb(null, `${id}`);
+        }
     },
 });
 
