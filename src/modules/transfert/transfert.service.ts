@@ -6,13 +6,14 @@ import { UserService } from "../user/user.service.js";
 import type { FileMetaData } from "./transfert.types.js";
 import { AppError } from "../../middlewares/errorHandler.js";
 import fs from "fs";
-import { Inject, Service } from "typedi";
+import { Service, Container } from "typedi";
 
 @Service()
 export class TransfertService {
     private fileInfoRepository: Repository<FileInfo>;
+    private userService = Container.get(UserService);
 
-    constructor(@Inject() private userService: UserService) {
+    constructor() {
         this.fileInfoRepository = AppDataSource.getRepository(FileInfo);
     }
 

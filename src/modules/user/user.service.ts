@@ -10,14 +10,14 @@ import redis from "../../config/redis.js";
 import { JwtService } from "../core/jwt.service.js";
 import type { TokensResponse } from "./user.types.js";
 import { MailService } from "../mail/mail.service.js";
-import { Inject, Service } from "typedi";
+import { Service } from "typedi";
 
 @Service()
 export class UserService {
     private userRepository: Repository<User>;
     private passwordRegex: RegExp;
 
-    constructor(@Inject() private mailService: MailService) {
+    constructor(private mailService: MailService) {
         this.userRepository = AppDataSource.getRepository(User);
         this.passwordRegex =
             /^.*(?=.{8,})(?=.*[a-zA-Z])(?=.*\d)(?=.*[!@#$%&? "]).*$/;

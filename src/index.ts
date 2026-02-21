@@ -3,7 +3,6 @@ import { Container } from "typedi";
 import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
 import express from "express";
-import "reflect-metadata";
 import swaggerUi from "swagger-ui-express";
 import { AppDataSource } from "./config/database.js";
 import { logger } from "./config/logger.js";
