@@ -1,6 +1,7 @@
 import { DataSource } from "typeorm";
 import dotenv from "dotenv";
 import { User } from "../models/user.js";
+import { FileInfo } from "../models/fileInfo.js";
 
 dotenv.config();
 
@@ -21,6 +22,6 @@ export const AppDataSource = new DataSource({
     },
     synchronize: process.env.NODE_ENV === "development",
     logging: false,
-    entities: [User],
+    entities: [FileInfo, User],
     migrations: ["src/migration/**/*.ts"],
 });

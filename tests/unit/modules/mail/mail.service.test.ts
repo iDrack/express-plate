@@ -1,3 +1,6 @@
+import "reflect-metadata";
+import { Container } from "typedi";
+import { MockContainer } from "../../../utils/mockContainer";
 import nodemailer from "nodemailer";
 import { MailService } from "../../../../src/modules/mail/mail.service";
 import { ResetPasswordMail } from "../../../../src/modules/mail/templates/ResetPasswordMail";
@@ -17,10 +20,12 @@ jest.mock("../../../../src/config/logger", () => ({
 }));
 
 describe("MailService", () => {
+    let mailService: MailService;
     let mockTransporter: any;
     let originalEnv: NodeJS.ProcessEnv;
 
     beforeEach(() => {
+        Container.reset();
         // Save original environment variables
         originalEnv = { ...process.env };
 
@@ -47,10 +52,10 @@ describe("MailService", () => {
             mockTransporter,
         );
 
-        // Clear singleton instance before each test
-        (MailService as any).instance = undefined;
-
         jest.clearAllMocks();
+
+        // Initialize MailService via TypeDI Container after mocks are set up
+        mailService = Container.get(MailService);
     });
 
     afterEach(() => {
@@ -60,9 +65,6 @@ describe("MailService", () => {
 
     describe("Constructor", () => {
         it("should create a MailService instance with test credentials", () => {
-            //Arrange
-            const mailService = MailService.getInstance();
-
             //Act & Assert
             expect(mailService).toBeInstanceOf(MailService);
             expect(nodemailer.createTransport).toHaveBeenCalledWith({
@@ -81,14 +83,12 @@ describe("MailService", () => {
             process.env.NODE_ENV = "production";
             process.env.MAIL_PORT = "465";
 
-            // Clear singleton instance
-            (MailService as any).instance = undefined;
-
-            //Act
-            const mailService = MailService.getInstance();
+            // Reset container and create new instance
+            Container.reset();
+            const prodMailService = Container.get(MailService);
 
             //Assert
-            expect(mailService).toBeInstanceOf(MailService);
+            expect(prodMailService).toBeInstanceOf(MailService);
             expect(nodemailer.createTransport).toHaveBeenCalledWith({
                 host: "smtp.test.com",
                 port: 465,
@@ -105,11 +105,11 @@ describe("MailService", () => {
             process.env.NODE_ENV = "production";
             delete process.env.MAIL_HOST;
 
-            // Clear singleton instance
-            (MailService as any).instance = undefined;
+            // Reset container
+            Container.reset();
 
             //Act & Assert
-            expect(() => MailService.getInstance()).toThrow(
+            expect(() => Container.get(MailService)).toThrow(
                 "Missing required mail configuration in production mode",
             );
         });
@@ -119,11 +119,11 @@ describe("MailService", () => {
             process.env.NODE_ENV = "production";
             delete process.env.MAIL_PORT;
 
-            // Clear singleton instance
-            (MailService as any).instance = undefined;
+            // Reset container
+            Container.reset();
 
             //Act & Assert
-            expect(() => MailService.getInstance()).toThrow(
+            expect(() => Container.get(MailService)).toThrow(
                 "Missing required mail configuration in production mode",
             );
         });
@@ -133,11 +133,11 @@ describe("MailService", () => {
             process.env.NODE_ENV = "production";
             delete process.env.MAIL_USER;
 
-            // Clear singleton instance
-            (MailService as any).instance = undefined;
+            // Reset container
+            Container.reset();
 
             //Act & Assert
-            expect(() => MailService.getInstance()).toThrow(
+            expect(() => Container.get(MailService)).toThrow(
                 "Missing required mail configuration in production mode",
             );
         });
@@ -147,18 +147,18 @@ describe("MailService", () => {
             process.env.NODE_ENV = "production";
             delete process.env.MAIL_PASSWORD;
 
-            // Clear singleton instance
-            (MailService as any).instance = undefined;
+            // Reset container
+            Container.reset();
 
             //Act & Assert
-            expect(() => MailService.getInstance()).toThrow(
+            expect(() => Container.get(MailService)).toThrow(
                 "Missing required mail configuration in production mode",
             );
         });
 
         it("should return the same instance when called multiple times (singleton)", () => {
-            const instance1 = MailService.getInstance();
-            const instance2 = MailService.getInstance();
+            const instance1 = Container.get(MailService);
+            const instance2 = Container.get(MailService);
 
             expect(instance1).toBe(instance2);
         });
@@ -167,7 +167,6 @@ describe("MailService", () => {
     describe("sendEmail", () => {
         it("should send an email successfully", async () => {
             //Arrange
-            const mailService = MailService.getInstance();
             const mail = {
                 to: "recipient@test.com",
                 subject: "Test Subject",
@@ -197,7 +196,6 @@ describe("MailService", () => {
 
         it("should handle sendMail errors", async () => {
             //arrange
-            const mailService = MailService.getInstance();
             const mail = {
                 to: "recipient@test.com",
                 subject: "Test Subject",
@@ -219,7 +217,6 @@ describe("MailService", () => {
     describe("resetEmailRequest", () => {
         it("should send password reset email successfully", async () => {
             //Arrange
-            const mailService = MailService.getInstance();
             const testUser: User = {
                 id: 1,
                 name: "Test User",
@@ -229,6 +226,7 @@ describe("MailService", () => {
                 createdAt: new Date(),
                 updatedAt: new Date(),
                 createdAtLocal: "2026-01-30",
+                files: [],
             };
             const token = "test-reset-token";
 
@@ -260,7 +258,6 @@ describe("MailService", () => {
 
         it("should handle errors when sending reset email", async () => {
             //Arrange
-            const mailService = MailService.getInstance();
             const testUser: User = {
                 id: 1,
                 name: "Test User",
@@ -270,6 +267,7 @@ describe("MailService", () => {
                 createdAt: new Date(),
                 updatedAt: new Date(),
                 createdAtLocal: "2026-01-30",
+                files: [],
             };
             const token = "test-reset-token";
 
@@ -295,6 +293,7 @@ describe("MailService", () => {
                 createdAt: new Date(),
                 updatedAt: new Date(),
                 createdAtLocal: "2026-01-30",
+                files: []
             };
             const token = "test-reset-token";
 
@@ -323,6 +322,7 @@ describe("MailService", () => {
                 createdAt: new Date(),
                 updatedAt: new Date(),
                 createdAtLocal: "2026-01-30",
+                files: [],
             };
             const token = "token+with/special=chars&more";
 

@@ -1,3 +1,4 @@
+import "reflect-metadata";
 import bcrypt from "bcrypt";
 import type { Repository } from "typeorm";
 import { AppDataSource } from "../../config/database.js";
@@ -5,24 +6,18 @@ import { logger } from "../../config/logger.js";
 import { AppError } from "../../middlewares/errorHandler.js";
 import { toRole } from "../../models/role.js";
 import { User } from "../../models/user.js";
-import redis from "../../redis.js";
+import redis from "../../config/redis.js";
 import { JwtService } from "../core/jwt.service.js";
-import { mailService } from "../mail/mail.service.js";
 import type { TokensResponse } from "./user.types.js";
+import { MailService } from "../mail/mail.service.js";
+import { Service } from "typedi";
 
-class UserService {
+@Service()
+export class UserService {
     private userRepository: Repository<User>;
     private passwordRegex: RegExp;
-    private static instance: UserService;
 
-    static getInstance() {
-        if (!UserService.instance) {
-            UserService.instance = new UserService();
-        }
-        return UserService.instance;
-    }
-
-    constructor() {
+    constructor(private mailService: MailService) {
         this.userRepository = AppDataSource.getRepository(User);
         this.passwordRegex =
             /^.*(?=.{8,})(?=.*[a-zA-Z])(?=.*\d)(?=.*[!@#$%&? "]).*$/;
@@ -292,7 +287,7 @@ class UserService {
         const redisKey = `pwdreset:${urlToken}`;
         await redis.set(redisKey, user.id.toString(), "EX", 600, "NX");
 
-        const res = mailService.resetEmailRequest(user, urlToken);
+        const res = this.mailService.resetEmailRequest(user, urlToken);
     }
 
     /**
@@ -308,14 +303,11 @@ class UserService {
             throw new AppError("Unable to process request.", 400);
         }
 
-        const userId = parseInt(token)
-        const user = await this.getUserById(userId)
-        const isPasswordSame = await bcrypt.compare(
-            newPassword,
-            user.password,
-        );
+        const userId = parseInt(token);
+        const user = await this.getUserById(userId);
+        const isPasswordSame = await bcrypt.compare(newPassword, user.password);
 
-        if(isPasswordSame) {
+        if (isPasswordSame) {
             throw new AppError(
                 "New password cannot be the same as old one.",
                 405,
@@ -328,10 +320,8 @@ class UserService {
 
         user.password = passwordHash;
 
-        redis.del(`pwdreset:${tokenHash}`)
+        redis.del(`pwdreset:${tokenHash}`);
         return this.userRepository.save(user);
-    
     }
 }
 
-export const userService = UserService.getInstance();

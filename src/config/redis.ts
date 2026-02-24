@@ -1,5 +1,5 @@
 import { Redis } from "ioredis";
-import { logger } from "./config/logger.js";
+import { logger } from "./logger.js";
 
 const redis = new Redis({
     host: process.env.REDIS_HOST || "127.0.0.1",

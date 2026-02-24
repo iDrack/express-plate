@@ -2,10 +2,15 @@ import type { NextFunction, Request, Response } from "express";
 import { AppError } from "../../middlewares/errorHandler.js";
 import type { User } from "../../models/user.js";
 import { JwtService } from "../core/jwt.service.js";
-import { userService } from "./user.service.js";
+
 import type { UserProfile } from "./user.types.js";
+import { UserService } from "./user.service.js";
+import { Container } from "typedi";
 
 export class UserController {
+
+    private userService = Container.get(UserService);
+
     constructor() {
         this.createUser = this.createUser.bind(this);
         this.loginUser = this.loginUser.bind(this);
@@ -27,7 +32,7 @@ export class UserController {
      * @param user User getting logged in.
      */
     async prepareTokens(res: Response, status: number, user: User) {
-        const { accessToken, refreshToken } = userService.login(user);
+        const { accessToken, refreshToken } = this.userService.login(user);
 
         res.cookie("refreshToken", refreshToken, {
             httpOnly: true,
@@ -70,7 +75,7 @@ export class UserController {
             }
 
             try {
-                if (await userService.getUserByEmail(email)) {
+                if (await this.userService.getUserByEmail(email)) {
                     throw new AppError(
                         `E-mail :${email} is already in use, please try a different one.`,
                         409,
@@ -83,7 +88,7 @@ export class UserController {
             }
 
             try {
-                if (await userService.getUserByName(name)) {
+                if (await this.userService.getUserByName(name)) {
                     throw new AppError(
                         `Username :${email} is already in use, please try a different one.`,
                         409,
@@ -94,7 +99,11 @@ export class UserController {
                     throw error;
                 }
             }
-            const user = await userService.createUser(name, email, password);
+            const user = await this.userService.createUser(
+                name,
+                email,
+                password,
+            );
             await this.prepareTokens(res, 201, user);
         } catch (error) {
             next(error);
@@ -117,7 +126,7 @@ export class UserController {
             if (!password || (!name && !email)) {
                 throw new AppError("Invalid credentials.", 400);
             }
-            const user = await userService.testCredentials(
+            const user = await this.userService.testCredentials(
                 name,
                 email,
                 password,
@@ -205,7 +214,7 @@ export class UserController {
                 );
             }
 
-            const user: User = await userService.getUserById(req.user.id);
+            const user: User = await this.userService.getUserById(req.user.id);
 
             if (!user) {
                 throw new AppError("User not found.", 404);
@@ -239,7 +248,7 @@ export class UserController {
         next: NextFunction,
     ): Promise<void> {
         try {
-            const users = await userService.getAllUsers();
+            const users = await this.userService.getAllUsers();
             if (users) {
                 res.json({ status: "success", data: users });
             }
@@ -264,7 +273,7 @@ export class UserController {
             if (req.params.id === undefined) {
                 throw new AppError("Missing userId.", 404);
             } else {
-                const user = await userService.getUserById(
+                const user = await this.userService.getUserById(
                     parseInt(req.params.id),
                 );
                 if (!user) {
@@ -303,7 +312,7 @@ export class UserController {
                 );
             }
             const { email, name, role } = req.body;
-            const user = await userService.updateUser(req.user.id, {
+            const user = await this.userService.updateUser(req.user.id, {
                 name: name,
                 email: email,
                 role: role,
@@ -335,7 +344,7 @@ export class UserController {
             }
 
             const { oldPassword, newPassword } = req.body;
-            const user = await userService.updatePassword(
+            const user = await this.userService.updatePassword(
                 req.user.id,
                 oldPassword,
                 newPassword,
@@ -368,7 +377,7 @@ export class UserController {
                 );
             }
             const { password } = req.body;
-            if (await userService.deleteUser(req.user.id, password)) {
+            if (await this.userService.deleteUser(req.user.id, password)) {
                 res.clearCookie("refreshToken", { path: "/users/refresh" });
 
                 res.status(200).json({
@@ -402,7 +411,7 @@ export class UserController {
             if (userId === undefined) {
                 throw new AppError("Missing userId", 404);
             }
-            await userService.deleteUserById(parseInt(userId));
+            await this.userService.deleteUserById(parseInt(userId));
             res.status(200).json({
                 status: "success",
                 message: `User: ${userId} has been deleted successfully.`,
@@ -429,16 +438,16 @@ export class UserController {
                 throw new AppError("Missing e-mail", 400);
             }
             try {
-                const user = await userService.getUserByEmail(email);
+                const user = await this.userService.getUserByEmail(email);
 
                 if (user !== null && user !== undefined) {
-                    await userService.passwordResetRequest(user);
+                    await this.userService.passwordResetRequest(user);
                 }
             } catch (error) {
                 if (error instanceof AppError && error.statusCode !== 404) {
                     throw error;
                 }
-                if(!(error instanceof AppError)) {
+                if (!(error instanceof AppError)) {
                     throw error;
                 }
             }
@@ -464,23 +473,26 @@ export class UserController {
         next: NextFunction,
     ): Promise<void> {
         try {
-            const {token, password} = req.body
-            if(!token || token === "") {
-                throw new AppError("You're missing a password reset token.", 405);
+            const { token, password } = req.body;
+            if (!token || token === "") {
+                throw new AppError(
+                    "You're missing a password reset token.",
+                    405,
+                );
             }
 
-            if(!password || token === "") {
+            if (!password || token === "") {
                 throw new AppError("Your new password cannot be blank.", 405);
             }
 
-            const user = await userService.passwordReset(token, password);
+            const user = await this.userService.passwordReset(token, password);
 
             res.status(200).json({
                 status: "success",
-                message: "Password updated, you can log in now."
+                message: "Password updated, you can log in now.",
             });
         } catch (error) {
-            next(error)
+            next(error);
         }
     }
 }

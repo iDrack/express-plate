@@ -1,7 +1,8 @@
+import "reflect-metadata";
+import { Container } from "typedi";
 import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
 import express from "express";
-import "reflect-metadata";
 import swaggerUi from "swagger-ui-express";
 import { AppDataSource } from "./config/database.js";
 import { logger } from "./config/logger.js";
@@ -10,6 +11,7 @@ import { errorHandler } from "./middlewares/errorHandler.js";
 import { httpLogger } from "./middlewares/httpLogger.js";
 import HealthRoutes from "./modules/health/health.routes.js";
 import UserRoutes from "./modules/user/user.routes.js";
+import FileTransfertRoute from "./modules/transfert/transfert.routes.js";
 
 const app = express();
 dotenv.config({ path: "./.env" });
@@ -32,6 +34,7 @@ if (logger.settings.minLevel <= 1) {
 //Routes
 app.use("/users", UserRoutes);
 app.use("/health", HealthRoutes);
+app.use("/file", FileTransfertRoute);
 
 //Errors handling
 app.use(errorHandler);

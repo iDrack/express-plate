@@ -1,7 +1,10 @@
-import { healthService } from "../../../../src/modules/health/health.service";
+import 'reflect-metadata';
+import { Container } from 'typedi';
+import { HealthService } from '../../../../src/modules/health/health.service';
+import { MockContainer } from '../../../utils/mockContainer';
 import { AppDataSource } from "../../../../src/config/database";
 import { HealthStatus } from "../../../../src/modules/health/health.types";
-import redis from "../../../../src/redis";
+import redis from "../../../../src/config/redis";
 
 jest.mock("../../../../src/config/database", () => ({
     AppDataSource: {
@@ -10,7 +13,7 @@ jest.mock("../../../../src/config/database", () => ({
     },
 }));
 
-jest.mock("../../../../src/redis", () => ({
+jest.mock("../../../../src/config/redis", () => ({
     __esModule: true,
     default: {
         ping: jest.fn(),
@@ -19,11 +22,12 @@ jest.mock("../../../../src/redis", () => ({
 }));
 
 describe("Health service class", () => {
+    let healthService: HealthService;
     let startTime = Date.now();
 
     beforeEach(() => {
-        jest.clearAllMocks();
-        (AppDataSource as any).isInitialized = true;
+        MockContainer.reset();
+        healthService = Container.get(HealthService); 
     });
 
     describe("getUptime", () => {

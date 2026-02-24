@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from "express";
+import multer from "multer";
 import { AppError, errorHandler } from "../../../src/middlewares/errorHandler";
 import { logger } from "../../../src/config/logger";
 
@@ -322,6 +323,50 @@ describe("Error handler middleware", () => {
                 statusCode: 500,
                 status: "Internal Server Error",
                 message: "Internal Server Error",
+            });
+        });
+    });
+
+    describe("Multer Error handling", () => {
+        it("should return a 413 error when file size limit is exceeded", () => {
+            // Arrange
+            const errorTest = new multer.MulterError("LIMIT_FILE_SIZE");
+
+            // Act
+            errorHandler(
+                errorTest,
+                mockRequest as Request,
+                mockResponse as Response,
+                mockNext,
+            );
+
+            // Assert
+            expect(mockResponse.status).toHaveBeenCalledWith(413);
+            expect(mockResponse.json).toHaveBeenCalledWith({
+                statusCode: 413,
+                status: "Payload Too Large",
+                message: "File too large, limit is 5Mo",
+            });
+        });
+
+        it("should return a 400 error when Multer Error is caught", () => {
+            // Arrange
+            const errorTest = new multer.MulterError("MISSING_FIELD_NAME");
+
+            // Act
+            errorHandler(
+                errorTest,
+                mockRequest as Request,
+                mockResponse as Response,
+                mockNext,
+            );
+
+            // Assert
+            expect(mockResponse.status).toHaveBeenCalledWith(400);
+            expect(mockResponse.json).toHaveBeenCalledWith({
+                statusCode: 400,
+                status: "Bad Request",
+                message: "Field name missing",
             });
         });
     });
