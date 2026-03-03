@@ -21,7 +21,8 @@
         "redis:info": "dotenv -e .env -- sh -c 'docker exec -it ${DOCKER_CONTAINER_NAME}-redis redis-cli -a ${REDIS_PASSWORD} info'",
         "test": "jest",
         "test:watch": "jest --watch",
-        "test:coverage": "jest --coverage"
+        "test:coverage": "jest --coverage",
+        "lint": "eslint ."
     },
     "keywords": [],
     "author": "",

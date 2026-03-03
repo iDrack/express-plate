@@ -1,6 +1,4 @@
-import type { Config } from "jest";
-
-const config: Config = {
+const config = {
     preset: 'ts-jest',
     testEnvironment: 'node',
     setupFilesAfterEnv: ['<rootDir>/tests/setup.js'],
@@ -28,4 +26,4 @@ const config: Config = {
     ]
 };
 
-export default config;
+module.exports = config;
