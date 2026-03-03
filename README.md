@@ -29,7 +29,7 @@ In the release section you will find a package with everything needed to deploy 
 
 ## Quick Start
 
-1. Extract this archive to your production server
+1. Download and extract the archive available in the release page to your production server
 2. Make sure Docker and Docker Compose are installed
 3. Run the deployment script:
    ```bash

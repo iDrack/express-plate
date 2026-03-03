@@ -77,15 +77,6 @@ jobs:
             - name: Generate test coverage
               run: npm run test:coverage || npm test -- --coverage || echo "No coverage script found"
 
-            - name: Upload test results
-              uses: actions/upload-artifact@v4
-              if: always()
-              with:
-                  name: test-results
-                  path: |
-                      test-results.xml
-                  retention-days: 7
-
     build-artifact:
         runs-on: ubuntu-latest
         needs: test
@@ -109,7 +100,7 @@ jobs:
                   APP_PORT=${{ secrets.APP_PORT || '8080' }}
                   DOCKER_CONTAINER_NAME=${{ secrets.DOCKER_CONTAINER_NAME || 'express-plate' }}
                   CLIENT_URL=${{ secrets.CLIENT_URL }}
-                  LOG_LEVEL=${{ secrets.LOG_LEVEL || 'info' }}
+                  LOG_LEVEL=${{ secrets.LOG_LEVEL || 1 }}
                   LOG_PERSIST=${{ secrets.LOG_PERSIST }}
                   JWT_SECRET=${{ secrets.JWT_SECRET }}
                   JWT_EXPIRES_IN=${{ secrets.JWT_EXPIRES_IN }}
@@ -132,7 +123,7 @@ jobs:
             - name: Build Docker image and save as tar
               run: |
                   docker build -t express-plate:latest .
-                  docker save express-plate:latest -o production-deploy/express-plate-image.tar
+                  docker save express-plate:latest -o production-deploy/app-image.tar
 
             - name: Copy project files
               run: |
@@ -150,7 +141,7 @@ jobs:
                   
                   # Load Docker image
                   echo "📦 Loading Docker image..."
-                  docker load -i express-plate-image.tar
+                  docker load -i app-image.tar
                   
                   # Stop existing containers
                   echo "⏹️  Stopping existing containers..."
@@ -187,23 +178,25 @@ jobs:
                   
                   chmod +x production-deploy/deploy.sh
 
+
             - name: Create deployment archive
               run: |
                   cd production-deploy
-                  tar -czf ../express-plate-production-$(date +%Y%m%d-%H%M%S).tar.gz .
+                  tar -czf ../app-production.tar.gz .
                   cd ..
-                  ls -la express-plate-production-*.tar.gz
+                  ls -la app-production.tar.gz
 
             - name: Upload production artifact
               uses: actions/upload-artifact@v4
               with:
-                  name: express-plate-production-deployment
-                  path: express-plate-production-*.tar.gz
+                  name: app-production-tar
+                  path: app-production.tar.gz
                   retention-days: 30
 
             - name: Upload deployment files (uncompressed)
               uses: actions/upload-artifact@v4
               with:
-                  name: express-plate-deployment-files
+                  name: app-production
                   path: production-deploy/
                   retention-days: 7
+                  include-hidden-files: true
