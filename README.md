@@ -58,15 +58,17 @@ If you prefer manual steps:
 
 ## Environment Variables
 
-The `deploy` action will generate a `.env` file contains all necessary environment variables from your github secrets.
+The `deploy` action will generate a `.env` file contains all necessary environment variables from your github secrets (those values can eb changed at anytime).
 
 ```text
 PORT=
 NODE_ENV=
 APP_VERSION=
 
-LOG_LEVEL=[0 - 6]
-LOG_PERSIST=[true - false]
+CLIENT_URL=
+
+LOG_LEVEL=
+LOG_PERSIST=
 
 DOCKER_CONTAINER_NAME=
 
