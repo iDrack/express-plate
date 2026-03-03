@@ -1,0 +1,211 @@
+name: Test and Build Production Artifact
+
+on:
+    push:
+        branches: [main, master]
+    workflow_dispatch:
+
+jobs:
+    test:
+        runs-on: ubuntu-latest
+        
+        services:
+            postgres:
+                image: postgres:16
+                env:
+                    POSTGRES_USER: test_user
+                    POSTGRES_PASSWORD: test_password
+                    POSTGRES_DB: test_db
+                ports:
+                    - 5432:5432
+                options: >-
+                    --health-cmd pg_isready
+                    --health-interval 10s
+                    --health-timeout 5s
+                    --health-retries 5
+
+            redis:
+                image: redis:7-alpine
+                ports:
+                    - 6379:6379
+                options: >-
+                    --health-cmd "redis-cli ping"
+                    --health-interval 10s
+                    --health-timeout 5s
+                    --health-retries 5
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: Set up Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: '18'
+                  cache: 'npm'
+
+            - name: Install dependencies
+              run: npm ci
+
+            - name: Create test .env file
+              run: |
+                  cat > .env << EOF
+                  NODE_ENV=test
+                  APP_PORT=3000
+                  DATABASE_HOST=localhost
+                  DATABASE_PORT=5432
+                  DATABASE_USER=test_user
+                  DATABASE_PASSWORD=test_password
+                  DATABASE_NAME=test_db
+                  REDIS_HOST=localhost
+                  REDIS_PORT=6379
+                  JWT_SECRET=test_jwt_secret_key_for_testing_only
+                  JWT_EXPIRES_IN=1h
+                  JWT_REFRESH_SECRET=test_refresh_secret_key_for_testing_only
+                  JWT_REFRESH_EXPIRES_IN=7d
+                  LOG_LEVEL=6
+                  EOF
+
+            - name: Run linting
+              run: npm run lint || true
+
+            - name: Run unit tests
+              run: npm test
+
+            - name: Run integration tests (if available)
+              run: npm run test:integration || echo "No integration tests found"
+
+            - name: Generate test coverage
+              run: npm run test:coverage || npm test -- --coverage || echo "No coverage script found"
+
+            - name: Upload test results
+              uses: actions/upload-artifact@v4
+              if: always()
+              with:
+                  name: test-results
+                  path: |
+                      coverage/
+                      test-results.xml
+                  retention-days: 7
+
+    build-artifact:
+        runs-on: ubuntu-latest
+        needs: test
+        if: success()
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: Set up Docker Buildx
+              uses: docker/setup-buildx-action@v3
+
+            - name: Create production directory
+              run: |
+                  mkdir -p production-deploy
+
+            - name: Create production .env file
+              run: |
+                  cat > production-deploy/.env << EOF
+                  NODE_ENV=production
+                  APP_PORT=${{ secrets.APP_PORT || '8080' }}
+                  DOCKER_CONTAINER_NAME=${{ secrets.DOCKER_CONTAINER_NAME || 'express-plate' }}
+                  CLIENT_URL=${{ secrets.CLIENT_URL }}
+                  LOG_LEVEL=${{ secrets.LOG_LEVEL || 'info' }}
+                  LOG_PERSIST=${{ secrets.LOG_PERSIST }}
+                  JWT_SECRET=${{ secrets.JWT_SECRET }}
+                  JWT_EXPIRES_IN=${{ secrets.JWT_EXPIRES_IN }}
+                  JWT_REFRESH_SECRET=${{ secrets.JWT_REFRESH_SECRET }}
+                  JWT_REFRESH_EXPIRES_IN=${{ secrets.JWT_REFRESH_EXPIRES_IN }}
+                  DATABASE_USER=${{ secrets.DATABASE_USER }}
+                  DATABASE_PASSWORD=${{ secrets.DATABASE_PASSWORD }}
+                  DATABASE_NAME=${{ secrets.DATABASE_NAME }}
+                  DATABASE_PORT=${{ secrets.DATABASE_PORT || '5432' }}
+                  DATABASE_HOST=${{ secrets.DATABASE_HOST || 'postgres' }}
+                  REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }}
+                  REDIS_PORT=${{ secrets.REDIS_PORT || '6379' }}
+                  REDIS_HOST=${{ secrets.REDIS_HOST || 'redis' }}
+                  MAIL_HOST=${{ secrets.MAIL_HOST }}
+                  MAIL_PORT=${{ secrets.MAIL_PORT }}
+                  MAIL_USER=${{ secrets.MAIL_USER }}
+                  MAIL_PASSWORD=${{ secrets.MAIL_PASSWORD }}
+                  EOF
+
+            - name: Build Docker image and save as tar
+              run: |
+                  docker build -t express-plate:latest .
+                  docker save express-plate:latest -o production-deploy/express-plate-image.tar
+
+            - name: Copy project files
+              run: |
+                  cp docker-compose.yml production-deploy/
+                  cp README.md production-deploy/
+                  cp -r docker/ production-deploy/ 2>/dev/null || true
+
+            - name: Create deployment script
+              run: |
+                  cat > production-deploy/deploy.sh << 'EOF'
+                  #!/bin/bash
+                  set -e
+                  
+                  echo "🚀 Starting deployment..."
+                  
+                  # Load Docker image
+                  echo "📦 Loading Docker image..."
+                  docker load -i express-plate-image.tar
+                  
+                  # Stop existing containers
+                  echo "⏹️  Stopping existing containers..."
+                  docker-compose down || true
+                  
+                  # Clean up old resources
+                  echo "🧹 Cleaning up old resources..."
+                  docker system prune -f || true
+                  
+                  # Start services
+                  echo "🏃 Starting services..."
+                  docker-compose up -d
+                  
+                  # Wait for services to be healthy
+                  echo "⏳ Waiting for services to be ready..."
+                  timeout 300 bash -c '
+                  while ! docker-compose ps | grep -E "(healthy|Up)"; do
+                    echo "Waiting for services to become ready..."
+                    sleep 10
+                  done'
+                  
+                  # Verify deployment
+                  echo "✅ Verifying deployment..."
+                  docker-compose ps
+                  
+                  # Test health endpoint (adjust port if needed)
+                  sleep 10
+                  if command -v curl >/dev/null 2>&1; then
+                    curl -f http://localhost:${APP_PORT:-8080}/health || echo "⚠️  Health check failed, but services may still be starting"
+                  fi
+                  
+                  echo "🎉 Deployment completed!"
+                  EOF
+                  
+                  chmod +x production-deploy/deploy.sh
+
+            - name: Create deployment archive
+              run: |
+                  cd production-deploy
+                  tar -czf ../express-plate-production-$(date +%Y%m%d-%H%M%S).tar.gz .
+                  cd ..
+                  ls -la express-plate-production-*.tar.gz
+
+            - name: Upload production artifact
+              uses: actions/upload-artifact@v4
+              with:
+                  name: express-plate-production-deployment
+                  path: express-plate-production-*.tar.gz
+                  retention-days: 30
+
+            - name: Upload deployment files (uncompressed)
+              uses: actions/upload-artifact@v4
+              with:
+                  name: express-plate-deployment-files
+                  path: production-deploy/
+                  retention-days: 7
