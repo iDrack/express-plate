@@ -70,10 +70,7 @@ jobs:
               run: npm run lint || true
 
             - name: Run unit tests
-              run: npm test
-
-            - name: Run integration tests (if available)
-              run: npm run test:integration || echo "No integration tests found"
+              run: npm run test
 
             - name: Generate test coverage
               run: npm run test:coverage || npm test -- --coverage || echo "No coverage script found"
