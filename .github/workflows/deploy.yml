@@ -81,7 +81,6 @@ jobs:
               with:
                   name: test-results
                   path: |
-                      coverage/
                       test-results.xml
                   retention-days: 7
 
