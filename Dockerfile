@@ -40,9 +40,6 @@ COPY --from=builder --chown=nodeUser:nodejs /app/package.json ./package.json
 # Switch to non-root user
 USER nodeUser
 
-# Create Bucket dir for uploaded files
-RUN mkdir -p /app/bucket
-
 # Expose port
 EXPOSE 8080
 
