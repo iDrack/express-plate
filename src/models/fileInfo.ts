@@ -5,6 +5,7 @@ import {
     ManyToOne,
     PrimaryGeneratedColumn,
     UpdateDateColumn,
+    type Relation,
 } from "typeorm";
 import { User } from "./user.js";
 
@@ -28,8 +29,8 @@ export class FileInfo {
     @Column({type: "varchar" })
     mimeType!: string;
 
-    @ManyToOne(() => User, user => user.files)
-    user!: User
+    @ManyToOne("User", "files")
+    user!: Relation<User>
 
     @CreateDateColumn()
     createdAt!: Date;

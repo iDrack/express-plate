@@ -31,7 +31,7 @@ export class User {
     @Column({ type: "enum", enum: Role, default: Role.USER })
     role!: Role;
 
-    @OneToMany(() => FileInfo, (fileInfo) => fileInfo.user)
+    @OneToMany("FileInfo", "user")
     files!: Relation<FileInfo>[];
 
     @CreateDateColumn()
