@@ -103,9 +103,9 @@ jobs:
                   LOG_LEVEL=${{ secrets.LOG_LEVEL || 1 }}
                   LOG_PERSIST=${{ secrets.LOG_PERSIST }}
                   JWT_SECRET=${{ secrets.JWT_SECRET }}
-                  JWT_EXPIRES_IN=${{ secrets.JWT_EXPIRES_IN }}
+                  JWT_EXPIRES_IN=${{ secrets.JWT_EXPIRES_IN || '1h' }}
                   JWT_REFRESH_SECRET=${{ secrets.JWT_REFRESH_SECRET }}
-                  JWT_REFRESH_EXPIRES_IN=${{ secrets.JWT_REFRESH_EXPIRES_IN }}
+                  JWT_REFRESH_EXPIRES_IN=${{ secrets.JWT_REFRESH_EXPIRES_IN || '7d' }}
                   DATABASE_USER=${{ secrets.DATABASE_USER }}
                   DATABASE_PASSWORD=${{ secrets.DATABASE_PASSWORD }}
                   DATABASE_NAME=${{ secrets.DATABASE_NAME }}
@@ -127,7 +127,7 @@ jobs:
 
             - name: Copy project files
               run: |
-                  cp docker-compose.yml production-deploy/
+                  cp docker compose.yml production-deploy/
                   cp README.md production-deploy/
                   cp -r docker/ production-deploy/ 2>/dev/null || true
 
@@ -145,7 +145,7 @@ jobs:
                   
                   # Stop existing containers
                   echo "⏹️  Stopping existing containers..."
-                  docker-compose down || true
+                  docker compose down || true
                   
                   # Clean up old resources
                   echo "🧹 Cleaning up old resources..."
@@ -153,19 +153,19 @@ jobs:
                   
                   # Start services
                   echo "🏃 Starting services..."
-                  docker-compose up -d
+                  docker compose up -d
                   
                   # Wait for services to be healthy
                   echo "⏳ Waiting for services to be ready..."
                   timeout 300 bash -c '
-                  while ! docker-compose ps | grep -E "(healthy|Up)"; do
+                  while ! docker compose ps | grep -E "(healthy|Up)"; do
                     echo "Waiting for services to become ready..."
                     sleep 10
                   done'
                   
                   # Verify deployment
                   echo "✅ Verifying deployment..."
-                  docker-compose ps
+                  docker compose ps
                   
                   # Test health endpoint (adjust port if needed)
                   sleep 10

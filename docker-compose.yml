@@ -1,47 +1,5 @@
 name: ${DOCKER_CONTAINER_NAME}
 services:
-  app:
-    build: .
-    container_name: ${DOCKER_CONTAINER_NAME}-api
-    restart: unless-stopped
-    ports: 
-      - "${APP_PORT:-8080}:8080"
-    environment:
-      - NODE_ENV=production
-      - APP_PORT=${APP_PORT}
-      - CLIENT_URL=${CLIENT_URL}
-      - LOG_LEVEL=${LOG_LEVEL}
-      - LOG_PERSIST=${LOG_PERSIST}
-      - JWT_SECRET=${JWT_SECRET}
-      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN}
-      - JWT_REFRESH_SECRETS=${JWT_REFRESH_SECRETS}
-      - JWT_REFRESH_EXPIRES_IN=${JWT_REFRESH_EXPIRES_IN}
-      - DATABASE_HOST=postgres
-      - DATABASE_USER=${DATABASE_USER}
-      - DATABASE_PASSWORD=${DATABASE_PASSWORD}
-      - DATABASE_NAME=${DATABASE_NAME}
-      - DATABASE_PORT=${DATABASE_PORT}
-      - REDIS_HOST=redis
-      - REDIS_PASSWORD=${REDIS_PASSWORD}
-      - REDIS_PORT=${REDIS_PORT}
-      - MAIL_HOST=${MAIL_HOST}
-      - MAIL_PORT=${MAIL_PORT}
-      - MAIL_USER=${MAIL_USER}
-      - MAIL_PASSWORD=${MAIL_PASSWORD}
-
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-    networks:
-      - app-network
   postgres:
     image: postgres:16
     container_name: ${DOCKER_CONTAINER_NAME}-db
@@ -75,6 +33,48 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - app-network
+  app:
+    image: ${DOCKER_CONTAINER_NAME}:latest
+    container_name: ${DOCKER_CONTAINER_NAME}-api
+    restart: unless-stopped
+    ports: 
+      - "${APP_PORT:-8080}:8080"
+    environment:
+      - NODE_ENV=production
+      - APP_PORT=${APP_PORT}
+      - CLIENT_URL=${CLIENT_URL}
+      - LOG_LEVEL=${LOG_LEVEL}
+      - LOG_PERSIST=${LOG_PERSIST}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN}
+      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET}
+      - JWT_REFRESH_EXPIRES_IN=${JWT_REFRESH_EXPIRES_IN}
+      - DATABASE_HOST=postgres
+      - DATABASE_USER=${DATABASE_USER}
+      - DATABASE_PASSWORD=${DATABASE_PASSWORD}
+      - DATABASE_NAME=${DATABASE_NAME}
+      - DATABASE_PORT=${DATABASE_PORT}
+      - REDIS_HOST=redis
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - REDIS_PORT=${REDIS_PORT}
+      - MAIL_HOST=${MAIL_HOST}
+      - MAIL_PORT=${MAIL_PORT}
+      - MAIL_USER=${MAIL_USER}
+      - MAIL_PASSWORD=${MAIL_PASSWORD}
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
     networks:
       - app-network
 

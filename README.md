@@ -42,7 +42,7 @@ If you prefer manual steps:
 
 1. Load the Docker image:
    ```bash
-   docker load -i express-plate-image.tar
+   docker load -i app-image.tar
    ```
 
 2. Start the services:
@@ -52,8 +52,8 @@ If you prefer manual steps:
 
 3. Check status:
    ```bash
-   docker-compose ps
-   docker-compose logs -f
+   docker compose ps
+   docker compose logs -f
    ```
 
 ## Environment Variables
