@@ -127,7 +127,7 @@ jobs:
 
             - name: Copy project files
               run: |
-                  cp docker compose.yml production-deploy/
+                  cp docker-compose.yml production-deploy/
                   cp README.md production-deploy/
                   cp -r docker/ production-deploy/ 2>/dev/null || true
 
