@@ -30,9 +30,6 @@ export class User {
     @Column({ type: "enum", enum: Role, default: Role.USER })
     role!: Role;
 
-    @OneToMany(() => FileInfo, (fileInfo) => fileInfo.user)
-    files!: FileInfo[]
-
     @CreateDateColumn()
     createdAt!: Date;
 

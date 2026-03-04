@@ -28,7 +28,7 @@ export class FileInfo {
     @Column({type: "varchar" })
     mimeType!: string;
 
-    @ManyToOne(() => User, (user) => user.files)
+    @ManyToOne(() => User)
     user!: User
 
     @CreateDateColumn()
