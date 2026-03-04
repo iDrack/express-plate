@@ -1,6 +1,8 @@
-name: Test and Build Production Artifact
+name: Test and Build Production Artifact without .env
 
 on:
+    push:
+        branches: [main, master]
     workflow_dispatch:
 
 jobs:
@@ -90,33 +92,6 @@ jobs:
             - name: Create production directory
               run: |
                   mkdir -p production-deploy
-
-            - name: Create production .env file
-              run: |
-                  cat > production-deploy/.env << EOF
-                  NODE_ENV=production
-                  APP_PORT=${{ secrets.APP_PORT || '8080' }}
-                  DOCKER_CONTAINER_NAME=${{ secrets.DOCKER_CONTAINER_NAME || 'express-plate' }}
-                  CLIENT_URL=${{ secrets.CLIENT_URL }}
-                  LOG_LEVEL=${{ secrets.LOG_LEVEL || 1 }}
-                  LOG_PERSIST=${{ secrets.LOG_PERSIST }}
-                  JWT_SECRET=${{ secrets.JWT_SECRET }}
-                  JWT_EXPIRES_IN=${{ secrets.JWT_EXPIRES_IN || '1h' }}
-                  JWT_REFRESH_SECRET=${{ secrets.JWT_REFRESH_SECRET }}
-                  JWT_REFRESH_EXPIRES_IN=${{ secrets.JWT_REFRESH_EXPIRES_IN || '7d' }}
-                  DATABASE_USER=${{ secrets.DATABASE_USER }}
-                  DATABASE_PASSWORD=${{ secrets.DATABASE_PASSWORD }}
-                  DATABASE_NAME=${{ secrets.DATABASE_NAME }}
-                  DATABASE_PORT=${{ secrets.DATABASE_PORT || '5432' }}
-                  DATABASE_HOST=${{ secrets.DATABASE_HOST || 'postgres' }}
-                  REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }}
-                  REDIS_PORT=${{ secrets.REDIS_PORT || '6379' }}
-                  REDIS_HOST=${{ secrets.REDIS_HOST || 'redis' }}
-                  MAIL_HOST=${{ secrets.MAIL_HOST }}
-                  MAIL_PORT=${{ secrets.MAIL_PORT }}
-                  MAIL_USER=${{ secrets.MAIL_USER }}
-                  MAIL_PASSWORD=${{ secrets.MAIL_PASSWORD }}
-                  EOF
 
             - name: Build Docker image and save as tar
               run: |

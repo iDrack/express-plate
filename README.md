@@ -58,7 +58,11 @@ If you prefer manual steps:
 
 ## Environment Variables
 
-The `deploy` action will generate a `.env` file contains all necessary environment variables from your github secrets (those values can eb changed at anytime).
+The `deploy` action will generate a `.env` file contains all necessary environment variables from your github secrets (those values can be changed at anytime).
+
+You can also use the `deploy-no-env` action to generate an artefact without a `.env` file. By default the `deploy-no-env` action will be executed on any push to the branch `main` or `master`.
+
+`.env` example :
 
 ```text
 PORT=
