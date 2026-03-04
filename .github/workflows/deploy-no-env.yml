@@ -95,8 +95,8 @@ jobs:
 
             - name: Build Docker image and save as tar
               run: |
-                  docker build -t express-plate:latest .
-                  docker save express-plate:latest -o production-deploy/app-image.tar
+                  docker build -t ${{ secrets.DOCKER_CONTAINER_NAME || 'express-plate' }}:latest .
+                  docker save ${{ secrets.DOCKER_CONTAINER_NAME || 'express-plate' }}:latest -o production-deploy/app-image.tar
 
             - name: Copy project files
               run: |
@@ -104,69 +104,19 @@ jobs:
                   cp README.md production-deploy/
                   cp -r docker/ production-deploy/ 2>/dev/null || true
 
-            - name: Create deployment script
+            - name: Copy deployment script
               run: |
-                  cat > production-deploy/deploy.sh << 'EOF'
-                  #!/bin/bash
-                  set -e
-                  
-                  echo "🚀 Starting deployment..."
-                  
-                  # Load Docker image
-                  echo "📦 Loading Docker image..."
-                  docker load -i app-image.tar
-                  
-                  # Stop existing containers
-                  echo "⏹️  Stopping existing containers..."
-                  docker compose down || true
-                  
-                  # Clean up old resources
-                  echo "🧹 Cleaning up old resources..."
-                  docker system prune -f || true
-                  
-                  # Start services
-                  echo "🏃 Starting services..."
-                  docker compose up -d
-                  
-                  # Wait for services to be healthy
-                  echo "⏳ Waiting for services to be ready..."
-                  timeout 300 bash -c '
-                  while ! docker compose ps | grep -E "(healthy|Up)"; do
-                    echo "Waiting for services to become ready..."
-                    sleep 10
-                  done'
-                  
-                  # Verify deployment
-                  echo "✅ Verifying deployment..."
-                  docker compose ps
-                  
-                  # Test health endpoint (adjust port if needed)
-                  sleep 10
-                  if command -v curl >/dev/null 2>&1; then
-                    curl -f http://localhost:${APP_PORT:-8080}/health || echo "⚠️  Health check failed, but services may still be starting"
-                  fi
-                  
-                  echo "🎉 Deployment completed!"
-                  EOF
-                  
+                  cp deploy.sh production-deploy                  
                   chmod +x production-deploy/deploy.sh
 
-
-            - name: Create deployment archive
-              run: |
-                  cd production-deploy
-                  tar -czf ../app-production.tar.gz .
-                  cd ..
-                  ls -la app-production.tar.gz
-
-            - name: Upload production artifact
+            - name: Upload production image
               uses: actions/upload-artifact@v4
               with:
-                  name: app-production-tar
-                  path: app-production.tar.gz
+                  name: app-image
+                  path: production-deploy/app-image.tar
                   retention-days: 30
 
-            - name: Upload deployment files (uncompressed)
+            - name: Upload deployment files
               uses: actions/upload-artifact@v4
               with:
                   name: app-production
