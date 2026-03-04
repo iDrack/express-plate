@@ -5,6 +5,7 @@ import {
     OneToMany,
     PrimaryGeneratedColumn,
     UpdateDateColumn,
+    type Relation,
 } from "typeorm";
 import { IsEmail, Length } from "class-validator";
 import { FileInfo } from "./fileInfo.js";
@@ -31,7 +32,7 @@ export class User {
     role!: Role;
 
     @OneToMany(() => FileInfo, (fileInfo) => fileInfo.user)
-    files!: FileInfo[];
+    files!: Relation<FileInfo>[];
 
     @CreateDateColumn()
     createdAt!: Date;
