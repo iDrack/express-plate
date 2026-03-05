@@ -43,13 +43,14 @@ AppDataSource.initialize()
     .then(() => {
         logger.info("Database connected successfully.");
         app.listen(port, () => {
-            if (process.env.NODE_ENV !== "production")
+            if (process.env.NODE_ENV !== "production") {
                 logger.info(
                     `Server running on port ${port} in ${process.env.NODE_ENV} mode`,
                 );
-            logger.info(
-                `Swagger docs available at http://localhost:${port}/api-docs`,
-            ); /*  */
+                logger.info(
+                    `Swagger docs available at http://localhost:${port}/api-docs`,
+                );
+            }
         });
     })
     .catch((error) => {

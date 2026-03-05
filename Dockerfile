@@ -48,7 +48,7 @@ ENV PORT=$PORT
 EXPOSE $PORT
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+HEALTHCHECK --interval=5m --timeout=10s --start-period=40s --retries=3 \
     CMD curl -f http://localhost:${PORT}/health || exit 1
 
 # Start the application
