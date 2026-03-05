@@ -14,7 +14,7 @@ services:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USER} -d ${DATABASE_NAME}"]
-      interval: 10s
+      interval: 5m
       timeout: 5s
       retries: 5
     networks:
@@ -30,7 +30,7 @@ services:
       - redis_data:/data
     healthcheck:
       test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
-      interval: 10s
+      interval: 5m
       timeout: 5s
       retries: 5
     networks:
@@ -77,7 +77,7 @@ services:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:${PORT}/health"]
-      interval: 30s
+      interval: 5m
       timeout: 10s
       retries: 3
       start_period: 40s
