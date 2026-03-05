@@ -23,7 +23,7 @@ app.use(express.json({ limit: "10kb" }));
 app.use(cookieParser());
 
 //Swagger
-if (process.env.NODE_ENV !== "production")
+/* if (process.env.NODE_ENV !== "production") */
     app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 //Logging
