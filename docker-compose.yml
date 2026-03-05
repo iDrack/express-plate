@@ -40,7 +40,7 @@ services:
     container_name: ${DOCKER_CONTAINER_NAME}-api
     restart: unless-stopped
     ports: 
-      - "${APP_PORT:-8080}:8080"
+      - "${APP_PORT}:${APP_PORT}"
     environment:
       NODE_ENV:  production
       APP_PORT: ${APP_PORT}
