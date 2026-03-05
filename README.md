@@ -62,7 +62,7 @@ The `deploy` action will generate a `.env` file contains all necessary environme
 
 You can also use the `deploy-no-env` action to generate an artefact without a `.env` file. By default the `deploy-no-env` action will be executed on any push to the branch `main` or `master`.
 
-`.env` example :
+In order to streamline CI/CD runs you should add secret variables equivalent to this `.env` example file:
 
 ```text
 PORT=
