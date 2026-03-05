@@ -40,12 +40,16 @@ COPY --from=builder --chown=nodeUser:nodejs /app/package.json ./package.json
 # Switch to non-root user
 USER nodeUser
 
+# Port configuration
+ARG PORT=8080
+ENV PORT=$PORT
+
 # Expose port
-EXPOSE 8080
+EXPOSE $PORT
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-    CMD curl -f http://localhost:8080/health || exit 1
+    CMD curl -f http://localhost:${PORT}/health || exit 1
 
 # Start the application
 CMD ["node", "dist/index.js"]

@@ -36,14 +36,18 @@ services:
     networks:
       - app-network
   app:
+    build:
+      context: .
+      args:
+        PORT: ${PORT}
     image: ${DOCKER_CONTAINER_NAME}:latest
     container_name: ${DOCKER_CONTAINER_NAME}-api
     restart: unless-stopped
     ports: 
-      - "${APP_PORT}:${APP_PORT}"
+      - "${PORT}:${PORT}"
     environment:
       NODE_ENV:  production
-      APP_PORT: ${APP_PORT}
+      PORT: ${PORT}
       CLIENT_URL: ${CLIENT_URL}
       LOG_LEVEL: ${LOG_LEVEL}
       LOG_PERSIST: ${LOG_PERSIST}
@@ -72,7 +76,7 @@ services:
       redis:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:${PORT}/health"]
       interval: 30s
       timeout: 10s
       retries: 3
