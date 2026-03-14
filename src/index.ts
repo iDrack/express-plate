@@ -1,5 +1,6 @@
 import "reflect-metadata";
 import { Container } from "typedi";
+import cors from 'cors';
 import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
 import express from "express";
@@ -18,6 +19,15 @@ dotenv.config({ path: "./.env" });
 const port = process.env.PORT;
 
 app.use(express.json({ limit: "10kb" }));
+
+//Cors
+const client_port = process.env.CLIENT_URL?.split(':')[1] || '3000';
+app.use(cors({
+  origin: [`http://localhost:${client_port}`, `http://127.0.0.1:${client_port}`],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 
 //Cookies
 app.use(cookieParser());
