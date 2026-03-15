@@ -1,4 +1,3 @@
-import "reflect-metadata";
 import type { Repository } from "typeorm";
 import { FileInfo } from "../../models/fileInfo.js";
 import { AppDataSource } from "../../config/database.js";

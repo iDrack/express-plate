@@ -1,4 +1,3 @@
-import "reflect-metadata";
 import type SMTPTransport from "nodemailer/lib/smtp-transport/index.js";
 import { logger } from "../../config/logger.js";
 import nodemailer from "nodemailer";

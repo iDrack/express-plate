@@ -1,4 +1,3 @@
-import "reflect-metadata";
 import { Container } from "typedi";
 import { MockContainer } from "../../../utils/mockContainer";
 import { Role } from "../../../../src/models/role";

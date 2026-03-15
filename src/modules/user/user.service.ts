@@ -1,4 +1,3 @@
-import "reflect-metadata";
 import bcrypt from "bcrypt";
 import type { Repository } from "typeorm";
 import { AppDataSource } from "../../config/database.js";
@@ -10,14 +9,17 @@ import redis from "../../config/redis.js";
 import { JwtService } from "../core/jwt.service.js";
 import type { TokensResponse } from "./user.types.js";
 import { MailService } from "../mail/mail.service.js";
-import { Service } from "typedi";
+import { Inject, Service } from "typedi";
 
 @Service()
 export class UserService {
+    @Inject(() => MailService)
+    private mailService!: MailService;
+    
     private userRepository: Repository<User>;
     private passwordRegex: RegExp;
 
-    constructor(private mailService: MailService) {
+    constructor() {
         this.userRepository = AppDataSource.getRepository(User);
         this.passwordRegex =
             /^.*(?=.{8,})(?=.*[a-zA-Z])(?=.*\d)(?=.*[!@#$%&? "]).*$/;
@@ -324,4 +326,3 @@ export class UserService {
         return this.userRepository.save(user);
     }
 }
-

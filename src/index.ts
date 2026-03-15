@@ -13,6 +13,7 @@ import { httpLogger } from "./middlewares/httpLogger.js";
 import HealthRoutes from "./modules/health/health.routes.js";
 import UserRoutes from "./modules/user/user.routes.js";
 import FileTransfertRoute from "./modules/transfert/transfert.routes.js";
+import { UserController } from "./modules/user/user.controller.js";
 
 const app = express();
 dotenv.config({ path: "./.env" });

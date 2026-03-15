@@ -1,4 +1,3 @@
-import "reflect-metadata";
 import type { Request, Response, NextFunction } from "express";
 import { AppError } from "./errorHandler.js";
 import { JwtService } from "../modules/core/jwt.service.js";

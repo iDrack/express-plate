@@ -5,11 +5,12 @@ import { JwtService } from "../core/jwt.service.js";
 
 import type { UserProfile } from "./user.types.js";
 import { UserService } from "./user.service.js";
-import { Container } from "typedi";
+import { Container, Inject, Service } from "typedi";
 
+@Service()
 export class UserController {
-
-    private userService = Container.get(UserService);
+    @Inject(() => UserService)
+    private userService!: UserService;
 
     constructor() {
         this.createUser = this.createUser.bind(this);
@@ -23,6 +24,8 @@ export class UserController {
         this.updatePassword = this.updatePassword.bind(this);
         this.deleteUser = this.deleteUser.bind(this);
         this.deleteUserById = this.deleteUserById.bind(this);
+        this.forgotPassword = this.forgotPassword.bind(this);
+        this.resetPassword = this.resetPassword.bind(this);
     }
 
     /**

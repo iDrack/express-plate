@@ -7,9 +7,10 @@ import {
     registerLimiter,
 } from "../../middlewares/rateLimiter.js";
 import { UserController } from "./user.controller.js";
+import { Container } from "typedi";
 
 const router = Router();
-const controller = new UserController();
+const controller = Container.get(UserController);
 
 router.use(apiLimiter);
 

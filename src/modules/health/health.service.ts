@@ -1,4 +1,3 @@
-import "reflect-metadata";
 import type { DataSource } from "typeorm";
 import { AppDataSource } from "../../config/database.js";
 import { HealthStatus, type DependencyCheck } from "./health.types.js";
