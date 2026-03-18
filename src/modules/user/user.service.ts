@@ -298,11 +298,11 @@ export class UserService {
      * @param newPassword New password.
      * @returns Updated User.
      */
-    async passwordReset(tokenHash: string, newPassword: string): Promise<User> {
+    async passwordReset(tokenHash: string, newPassword: string): Promise<User> {        
         const token = await redis.get(`pwdreset:${tokenHash}`);
 
         if (!token || token === "") {
-            throw new AppError("Unable to process request.", 400);
+            throw new AppError("Password reset has expired.", 400);
         }
 
         const userId = parseInt(token);

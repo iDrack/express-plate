@@ -487,7 +487,7 @@ export class UserController {
             if (!password || token === "") {
                 throw new AppError("Your new password cannot be blank.", 405);
             }
-
+            
             const user = await this.userService.passwordReset(token, password);
 
             res.status(200).json({
