@@ -6,6 +6,7 @@ import { UserService } from "../../../../src/modules/user/user.service";
 import { AppError } from "../../../../src/middlewares/errorHandler";
 import { JwtService } from "../../../../src/modules/core/jwt.service";
 import { MockContainer } from "../../../utils/mockContainer";
+import Container from "typedi";
 
 jest.mock("../../../../src/modules/core/jwt.service", () => ({
     JwtService: {
@@ -27,7 +28,8 @@ describe("User Controller class", () => {
         mockUserService =
             MockContainer.createMockService<UserService>(UserService);
 
-        userController = new UserController();
+        //userController = new UserController();
+        userController = Container.get(UserController);
         mockUserReq = {
             id: 1,
             name: "testUser",

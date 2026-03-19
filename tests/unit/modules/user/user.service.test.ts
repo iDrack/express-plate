@@ -678,7 +678,7 @@ describe("UserService", () => {
             } catch (error: any) {
                 expect(error).toBeInstanceOf(AppError);
                 expect(error.statusCode).toBe(400);
-                expect(error.message).toBe("Unable to process request.");
+                expect(error.message).toBe("Password reset has expired.");
             }
         });
 
@@ -693,7 +693,7 @@ describe("UserService", () => {
             } catch (error: any) {
                 expect(error).toBeInstanceOf(AppError);
                 expect(error.statusCode).toBe(400);
-                expect(error.message).toBe("Unable to process request.");
+                expect(error.message).toBe("Password reset has expired.");
             }
         });
 
