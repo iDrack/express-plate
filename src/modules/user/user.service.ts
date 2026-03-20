@@ -41,6 +41,7 @@ export class UserService {
     ): Promise<User> {
         let user;
         if (email) {
+            email = email.toLowerCase();
             user = await this.userRepository.findOne({ where: { email } });
         } else if (name) {
             user = await this.userRepository.findOne({ where: { name } });
@@ -140,7 +141,7 @@ export class UserService {
      */
     async getUserByEmail(email: string): Promise<User> {
         const user = await this.userRepository.findOne({
-            where: { email: email },
+            where: { email: email.toLowerCase() },
         });
         if (!user) {
             throw new AppError("User not found.", 404);
@@ -167,7 +168,7 @@ export class UserService {
         const hash = await bcrypt.hash(password, 10);
         const user = this.userRepository.create({
             name: name,
-            email: email,
+            email: email.toLowerCase(),
             password: hash,
         });
         return await this.userRepository.save(user);
@@ -196,7 +197,7 @@ export class UserService {
     ): Promise<User> {
         const userToUpdate = await this.getUserById(id);
         const { email, name, role } = newData;
-        if (email) userToUpdate.email = email;
+        if (email) userToUpdate.email = email.toLowerCase();
         if (name) userToUpdate.name = name;
         if (role) userToUpdate.role = toRole(role);
 
