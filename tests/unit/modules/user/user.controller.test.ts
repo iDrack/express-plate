@@ -88,9 +88,9 @@ describe("User Controller class", () => {
                 {
                     httpOnly: true,
                     secure: process.env.NODE_ENV === "production",
-                    sameSite: "strict",
+                    sameSite: "lax",
                     maxAge: 30 * 24 * 60 * 60 * 1000,
-                    path: "/users/refresh",
+                    path: "/",
                 },
             );
             expect(mockResponse.status).toHaveBeenCalledWith(200);
@@ -650,7 +650,7 @@ describe("User Controller class", () => {
             expect(mockResponse.clearCookie).toHaveBeenCalledWith(
                 "refreshToken",
                 {
-                    path: "/users/refresh",
+                    path: "/",
                 },
             );
             expect(mockResponse.status).toHaveBeenCalledWith(200);
@@ -1168,9 +1168,9 @@ describe("User Controller class", () => {
                 {
                     httpOnly: true,
                     secure: process.env.NODE_ENV === "production",
-                    sameSite: "strict",
+                    sameSite: "lax",
                     maxAge: 30 * 24 * 60 * 60 * 1000,
-                    path: "/users/refresh",
+                    path: "/",
                 },
             );
             expect(mockResponse.status).toHaveBeenCalledWith(200);
@@ -1389,9 +1389,9 @@ describe("User Controller class", () => {
                 {
                     httpOnly: true,
                     secure: process.env.NODE_ENV === "production",
-                    sameSite: "strict",
+                    sameSite: "lax",
                     maxAge: 30 * 24 * 60 * 60 * 1000,
-                    path: "/users/refresh",
+                    path: "/",
                 },
             );
             expect(mockResponse.status).toHaveBeenCalledWith(200);
@@ -1734,7 +1734,7 @@ describe("User Controller class", () => {
             expect(mockResponse.clearCookie).toHaveBeenCalledWith(
                 "refreshToken",
                 {
-                    path: "/users/refresh",
+                    path: "/",
                 },
             );
             expect(mockResponse.status).toHaveBeenCalledWith(200);

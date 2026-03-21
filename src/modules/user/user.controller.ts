@@ -40,9 +40,9 @@ export class UserController {
         res.cookie("refreshToken", refreshToken, {
             httpOnly: true,
             secure: process.env.NODE_ENV === "production",
-            sameSite: "strict",
+            sameSite: "lax",
             maxAge: 30 * 24 * 60 * 60 * 1000, //30 days
-            path: "/users/refresh",
+            path: "/",
         });
         res.status(status).json({
             status: "success",
@@ -152,7 +152,8 @@ export class UserController {
         next: NextFunction,
     ): Promise<void> {
         try {
-            res.clearCookie("refreshToken", { path: "/users/refresh" });
+            res.clearCookie("refreshToken", { path: "/" });
+            
             res.status(200).json({
                 status: "success",
                 message: "Logout successful.",
@@ -381,7 +382,7 @@ export class UserController {
             }
             const { password } = req.body;
             if (await this.userService.deleteUser(req.user.id, password)) {
-                res.clearCookie("refreshToken", { path: "/users/refresh" });
+                res.clearCookie("refreshToken", { path: "/" });
 
                 res.status(200).json({
                     message: "Account deleted successfully.",
