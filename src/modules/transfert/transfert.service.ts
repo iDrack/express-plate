@@ -55,8 +55,9 @@ export class TransfertService {
         userId: number,
     ): Promise<FileMetaData> {
         const user = await this.userService.getUserById(userId);
+        const decodedOriginalName = Buffer.from(file.originalname, 'latin1').toString('utf8');
         const fileMeta = {
-            originalName: file.originalname,
+            originalName: decodedOriginalName,
             storedAs: file.filename,
             path: file.path,
             size: file.size,
@@ -85,7 +86,7 @@ export class TransfertService {
     }
 
     /**
-     * Retrieve every fiel metadata owned by a specific user.
+     * Retrieve every file metadata owned by a specific user.
      * @param userId User id.
      * @param offset NUmber of files to skip over.
      * @param limit Limit of files to return.
@@ -212,7 +213,7 @@ export class TransfertService {
     async deleteFileByIdByUser(
         fileId: number,
         userId: number,
-    ): Promise<boolean> {
+    ): Promise<string> {
         try {
             const file = await this.getFileById(fileId);
 
@@ -226,7 +227,7 @@ export class TransfertService {
 
             await this.fileInfoRepository.delete(fileId);
 
-            return true;
+            return file.originalName;
         } catch (error) {
             throw error;
         }

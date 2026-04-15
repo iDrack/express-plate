@@ -42,6 +42,12 @@ if (logger.settings.minLevel <= 1) {
     app.use(httpLogger);
 }
 
+//Headers
+app.use((req, res, next) => {
+  res.setHeader('Content-Type', 'application/json; charset=utf-8');
+  next();
+});
+
 //Routes
 app.use("/users", UserRoutes);
 app.use("/health", HealthRoutes);

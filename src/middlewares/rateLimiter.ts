@@ -1,9 +1,9 @@
 import rateLimit from "express-rate-limit";
 
-//100 requêtes/15min
+//1000 requêtes/15min
 export const apiLimiter = rateLimit({
     windowMs: 15*60*1000,
-    max: 100,
+    max: 1000,
     message: {
         status: "fail",
         message: "Too many requests, please try again later."
@@ -39,7 +39,7 @@ export const loginLimiter = rateLimit({
 
 //Limite le refresh du token
 export const refreshLimiter = rateLimit({
-    windowMs: 15*60*1000,
+    windowMs: 60*1000,
     max: 10,
     message: {
         status: "fail",

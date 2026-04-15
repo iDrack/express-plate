@@ -19,10 +19,13 @@ const storage = multer.diskStorage({
         cb(null, absPath);
     },
     filename: (req, file, cb) => {
+        const decodedName = Buffer.from(file.originalname, "latin1").toString(
+            "utf8",
+        );
         //Generate random unique name for file, original name is sanitized and saved in db
         const id = crypto.randomUUID();
-        if (file.originalname.split("").includes(".")) {
-            const fileExt = file.originalname.split(".").at(-1);
+        if (decodedName.includes(".")) {
+            const fileExt = decodedName.split(".").at(-1);
             cb(null, `${id}.${fileExt}`);
         } else {
             cb(null, `${id}`);

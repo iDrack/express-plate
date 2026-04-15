@@ -107,13 +107,13 @@ router.use(apiLimiter);
  *           schema:
  *             type: object
  *             properties:
- *               file:
+ *               files:
  *                 type: array
  *                 items:
  *                   type: string
  *                   format: binary
  *             required:
- *               - file
+ *               - files
  *     responses:
  *       200:
  *         description: Files uploaded successfully.
@@ -125,7 +125,7 @@ router.use(apiLimiter);
 router.post(
     "/upload",
     authenticate,
-    upload.array("file", 10),
+    upload.array("files", 10),
     controller.uploadMultipleFile,
 );
 

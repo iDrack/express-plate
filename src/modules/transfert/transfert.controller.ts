@@ -10,7 +10,7 @@ export class TransfertController {
     private transfertService = Container.get(TransfertService);
 
     constructor() {
-        this.limit = 20;
+        this.limit = 10;
         this.uploadMultipleFile = this.uploadMultipleFile.bind(this);
         this.deleteFileById = this.deleteFileById.bind(this);
         this.getAllFiles = this.getAllFiles.bind(this);
@@ -289,14 +289,14 @@ export class TransfertController {
                 throw new AppError("User id is invalid.", 405);
             }
 
-            const result = await this.transfertService.deleteFileByIdByUser(
+            const filename = await this.transfertService.deleteFileByIdByUser(
                 parseInt(req.params.id),
                 req.user.id,
             );
 
             res.status(200).json({
                 status: "success",
-                data: `File with id ${req.params.id} has been deleted successfully.`,
+                data: `File ${filename} has been deleted successfully.`,
             });
         } catch (error) {
             next(error);
